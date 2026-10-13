@@ -37,7 +37,7 @@
   // A post's cover is saved as a Storage path (blog/<post>/<file>) or as a file
   // of this site (images/…) — never a full URL. This turns either into an
   // address the browser can load. `siteBase` is where the site's own files are
-  // from the current page ('' on the blog, '../' on the admin page).
+  // from the current page ('' on the blog, '/' on the admin page).
   function coverUrl(path, siteBase) {
     var value = String(path || '');
     if (/^blog\/[^/]+\/[^/]+$/.test(value)) {

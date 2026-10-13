@@ -5,20 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Leo Club of Moratuwa Blog Admin</title>
   <meta name="robots" content="noindex,nofollow" />
+  <!-- Every address in this file starts with / so the page works whether it
+       is opened as /admin or /admin/. -->
   <!-- Only this site's own scripts and the three libraries below may run here.
        The 127.0.0.1 addresses are the local Firebase emulators (testing only). -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://cdn.ckeditor.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https: http://127.0.0.1:9198; connect-src 'self' https://*.googleapis.com http://127.0.0.1:9099 http://127.0.0.1:8181 http://127.0.0.1:9198; object-src 'none'; base-uri 'self'; form-action 'self'" />
   <meta name="theme-color" content="#080001" />
-  <link rel="icon" type="image/png" sizes="192x192" href="../images/logos/logo-192.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/images/logos/logo-192.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha384-/o6I2CkkWC//PSjvWC/eYN7l3xM3tJm8ZzVkCOfp//W05QcE3mlGskpoHB6XqI+B" crossorigin="anonymous" />
-  <link rel="stylesheet" href="./assets/admin.css" />
-  <script src="../js/env-secrets.js"></script>
-  <script src="../js/env-config.js"></script>
-  <script src="../js/shared/text-utils.js"></script>
-  <script src="../js/shared/safe-html.js"></script>
+  <link rel="stylesheet" href="/admin/assets/admin.css" />
+  <script src="/js/env-secrets.js"></script>
+  <script src="/js/env-config.js"></script>
+  <script src="/js/shared/text-utils.js"></script>
+  <script src="/js/shared/safe-html.js"></script>
 </head>
 <body>
   <div id="appRoot" class="app-root">
@@ -31,10 +33,10 @@
       <!-- Left: brand panel (decorative — hidden on phones) -->
       <section class="login-brand" aria-hidden="true">
         <div class="login-kanji">武</div>
-        <img class="login-watermark" src="../images/logos/logo-512.png" alt="" loading="lazy" />
+        <img class="login-watermark" src="/images/logos/logo-512.png" alt="" loading="lazy" />
         <div class="login-brand-inner">
           <div class="brand-row">
-            <img src="../images/logos/logo-192.png" alt="" />
+            <img src="/images/logos/logo-192.png" alt="" />
             <span>Leo Club <b>of Moratuwa</b></span>
           </div>
           <h1>Bold in <span>Service.</span><br>United in <span>Purpose.</span></h1>
@@ -50,7 +52,7 @@
       <!-- Right: the form -->
       <section class="login-panel">
         <form class="login-card" id="loginForm" novalidate>
-          <img class="login-logo" src="../images/logos/logo-192.png" alt="Leo Club of Moratuwa" />
+          <img class="login-logo" src="/images/logos/logo-192.png" alt="Leo Club of Moratuwa" />
           <p class="eyebrow">Blog Admin</p>
           <h2>Welcome back</h2>
           <p class="login-sub">Sign in with your Mora Connect account.</p>
@@ -79,7 +81,7 @@
             <span>Sign in</span><i class="fas fa-arrow-right"></i>
           </button>
 
-          <a class="back-link" href="../"><i class="fas fa-arrow-left"></i> Back to the blog</a>
+          <a class="back-link" href="/"><i class="fas fa-arrow-left"></i> Back to the blog</a>
         </form>
         <p class="login-foot">&copy; 2026 Leo Club of Moratuwa &middot; Authorised editors only</p>
       </section>
@@ -88,7 +90,7 @@
     <!-- Signed in, but the email is not verified yet: the same card, one job -->
     <div class="login-panel solo" id="accessView" hidden>
       <div class="login-card">
-        <img class="login-logo" src="../images/logos/logo-192.png" alt="Leo Club of Moratuwa" />
+        <img class="login-logo" src="/images/logos/logo-192.png" alt="Leo Club of Moratuwa" />
         <p class="eyebrow">Blog Admin</p>
         <h2 id="accessTitle">Verify your email</h2>
         <p class="login-sub" id="accessMessage"></p>
@@ -103,7 +105,7 @@
     <header class="topbar">
       <div class="brand">Leo Club of Moratuwa Blog</div>
       <div class="topbar-actions">
-        <a class="topbar-link" href="../" target="_blank" rel="noopener">View blog</a>
+        <a class="topbar-link" href="/" target="_blank" rel="noopener">View blog</a>
         <span id="authBadge" class="auth-badge"></span>
         <button id="logoutBtn" class="btn secondary">Sign out</button>
       </div>
@@ -272,18 +274,18 @@
   <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
 
   <!-- The site's hand-written articles, for "Import site articles" -->
-  <script src="../js/articles/news.js"></script>
-  <script src="../js/articles/events.js"></script>
-  <script src="../js/articles/service.js"></script>
-  <script src="../js/articles/leadership.js"></script>
-  <script src="../js/articles/education.js"></script>
-  <script src="../js/articles/environment.js"></script>
-  <script src="../js/articles/health.js"></script>
-  <script src="../js/articles/technology.js"></script>
-  <script src="../js/articles/stories.js"></script>
-  <script src="../js/articles/achievements.js"></script>
+  <script src="/js/articles/news.js"></script>
+  <script src="/js/articles/events.js"></script>
+  <script src="/js/articles/service.js"></script>
+  <script src="/js/articles/leadership.js"></script>
+  <script src="/js/articles/education.js"></script>
+  <script src="/js/articles/environment.js"></script>
+  <script src="/js/articles/health.js"></script>
+  <script src="/js/articles/technology.js"></script>
+  <script src="/js/articles/stories.js"></script>
+  <script src="/js/articles/achievements.js"></script>
 
-  <script src="./assets/firebase-services.js"></script>
-  <script src="./assets/admin-app.js"></script>
+  <script src="/admin/assets/firebase-services.js"></script>
+  <script src="/admin/assets/admin-app.js"></script>
 </body>
 </html>

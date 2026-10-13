@@ -435,7 +435,7 @@
     if (file) {
       appState.localPreviewImageUrl = URL.createObjectURL(file);
     }
-    const imageUrl = appState.localPreviewImageUrl || env.coverUrl(appState.coverPath, "../");
+    const imageUrl = appState.localPreviewImageUrl || env.coverUrl(appState.coverPath, "/");
     if (imageUrl) {
       els.previewImage.src = imageUrl;
       els.previewImage.hidden = false;
