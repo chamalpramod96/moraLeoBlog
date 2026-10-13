@@ -2,138 +2,137 @@
 <rss version="2.0">
   <channel>
     <title>The Leo Chronicle</title>
-    <link>https://moraleoblog.web.app/blog/index.html</link>
+    <link>https://moraleoblog.vercel.app/</link>
     <description>Stories of service, leadership, and impact from the Leo Club of Moratuwa.</description>
     <language>en</language>
-    <lastBuildDate>Tue, 07 Jul 2026 00:00:00 GMT</lastBuildDate>
+    <lastBuildDate>Wed, 29 Jul 2026 00:00:00 GMT</lastBuildDate>
     <item>
-      <title>Club Bulletin: July Updates from the Executive Board</title>
-      <link>https://moraleoblog.web.app/blog/index.html?post=club-bulletin-july-updates-from-the-executive-board</link>
-      <guid>https://moraleoblog.web.app/blog/index.html?post=club-bulletin-july-updates-from-the-executive-board</guid>
-      <pubDate>Mon, 06 Jul 2026 00:00:00 GMT</pubDate>
-      <description>news article by News Desk</description>
+      <title>Leo Ape Dansala – July: Sharing Sweetness, Spreading Smiles</title>
+      <link>https://moraleoblog.vercel.app/?post=leo-ape-dansala-july-sharing-sweetness-spreading-smiles</link>
+      <guid>https://moraleoblog.vercel.app/?post=leo-ape-dansala-july-sharing-sweetness-spreading-smiles</guid>
+      <pubDate>Wed, 29 Jul 2026 00:00:00 GMT</pubDate>
+      <category>service</category>
+      <description>The club commenced this year's Leo Ape Dansala series with a heartfelt ice cream dansala, marking the start of a tradition that will continue every Poya Day.</description>
     </item>
     <item>
-      <title>Weekend Fellowship Meetup: Highlights and Next Steps</title>
-      <link>https://moraleoblog.web.app/blog/index.html?post=weekend-fellowship-meetup-highlights-and-next-steps</link>
-      <guid>https://moraleoblog.web.app/blog/index.html?post=weekend-fellowship-meetup-highlights-and-next-steps</guid>
+      <title>Be the Light for Someone</title>
+      <link>https://moraleoblog.vercel.app/?post=be-the-light-for-someone</link>
+      <guid>https://moraleoblog.vercel.app/?post=be-the-light-for-someone</guid>
+      <pubDate>Mon, 27 Jul 2026 00:00:00 GMT</pubDate>
+      <category>stories</category>
+      <description>The world doesn't always need grand gestures to become a better place. Sometimes, all it takes is one person choosing to be a little kinder than yesterday.</description>
+    </item>
+    <item>
+      <title>You Are Growing</title>
+      <link>https://moraleoblog.vercel.app/?post=you-are-growing</link>
+      <guid>https://moraleoblog.vercel.app/?post=you-are-growing</guid>
+      <pubDate>Fri, 24 Jul 2026 00:00:00 GMT</pubDate>
+      <category>stories</category>
+      <description>A poem on patience, quiet seasons, and trusting that even when nothing seems to be happening, you are still becoming.</description>
+    </item>
+    <item>
+      <title>The Quiet Power of Listening</title>
+      <link>https://moraleoblog.vercel.app/?post=the-quiet-power-of-listening</link>
+      <guid>https://moraleoblog.vercel.app/?post=the-quiet-power-of-listening</guid>
+      <pubDate>Thu, 23 Jul 2026 00:00:00 GMT</pubDate>
+      <category>leadership</category>
+      <description>True leadership is not measured by how loudly we speak, but by how deeply we listen. A reflection on presence, patience, and the strength found in silence.</description>
+    </item>
+    <item>
+      <title>Listen to Everyone... But Think for Yourself</title>
+      <link>https://moraleoblog.vercel.app/?post=listen-to-everyone-but-think-for-yourself</link>
+      <guid>https://moraleoblog.vercel.app/?post=listen-to-everyone-but-think-for-yourself</guid>
+      <pubDate>Tue, 21 Jul 2026 00:00:00 GMT</pubDate>
+      <category>stories</category>
+      <description>Listening doesn't mean obeying. Not every opinion is truth, and not every piece of advice is right for your life.</description>
+    </item>
+    <item>
+      <title>July General Meeting: Strengthening Bonds, Sharing Visions</title>
+      <link>https://moraleoblog.vercel.app/?post=july-general-meeting-strengthening-bonds-sharing-visions</link>
+      <guid>https://moraleoblog.vercel.app/?post=july-general-meeting-strengthening-bonds-sharing-visions</guid>
+      <pubDate>Sun, 19 Jul 2026 00:00:00 GMT</pubDate>
+      <category>news</category>
+      <description>Chief Guest Leo Lion Chamal Pramod and district guests joined the club's July meeting to share leadership insights and discuss upcoming projects.</description>
+    </item>
+    <item>
+      <title>We Only Have One Earth</title>
+      <link>https://moraleoblog.vercel.app/?post=we-only-have-one-earth</link>
+      <guid>https://moraleoblog.vercel.app/?post=we-only-have-one-earth</guid>
+      <pubDate>Sat, 18 Jul 2026 00:00:00 GMT</pubDate>
+      <category>environment</category>
+      <description>The Earth has always been there for us, asking for nothing in return. Somewhere along the way, we began taking these gifts for granted.</description>
+    </item>
+    <item>
+      <title>The Artist by the Lake</title>
+      <link>https://moraleoblog.vercel.app/?post=the-artist-by-the-lake</link>
+      <guid>https://moraleoblog.vercel.app/?post=the-artist-by-the-lake</guid>
+      <pubDate>Thu, 16 Jul 2026 00:00:00 GMT</pubDate>
+      <category>stories</category>
+      <description>&quot;I don't paint what I see,&quot; the old artist said. &quot;I paint what I feel.&quot; A short story about seeing beauty in every colour, not only the brightest ones.</description>
+    </item>
+    <item>
+      <title>Where Art Meets the Soul</title>
+      <link>https://moraleoblog.vercel.app/?post=where-art-meets-the-soul</link>
+      <guid>https://moraleoblog.vercel.app/?post=where-art-meets-the-soul</guid>
+      <pubDate>Tue, 14 Jul 2026 00:00:00 GMT</pubDate>
+      <category>stories</category>
+      <description>There is something magical about finding yourself alone with nature. Perhaps that is why art feels so peaceful.</description>
+    </item>
+    <item>
+      <title>It's Okay Not to Be Okay</title>
+      <link>https://moraleoblog.vercel.app/?post=its-okay-not-to-be-okay</link>
+      <guid>https://moraleoblog.vercel.app/?post=its-okay-not-to-be-okay</guid>
+      <pubDate>Sun, 12 Jul 2026 00:00:00 GMT</pubDate>
+      <category>health</category>
+      <description>We often ask each other, &quot;How are you?&quot; and almost without thinking, we reply, &quot;I'm fine.&quot; Sometimes those two words hide a heart carrying more than anyone can see.</description>
+    </item>
+    <item>
+      <title>Leo Voyage: The Beginning of Every Leo Journey</title>
+      <link>https://moraleoblog.vercel.app/?post=leo-voyage-the-beginning-of-every-leo-journey</link>
+      <guid>https://moraleoblog.vercel.app/?post=leo-voyage-the-beginning-of-every-leo-journey</guid>
+      <pubDate>Sat, 11 Jul 2026 00:00:00 GMT</pubDate>
+      <category>events</category>
+      <description>A hybrid orientation held with the Leo Club of Prince of Wales College, bringing together 39 aspiring and active Leos to explore the spirit of Leoism.</description>
+    </item>
+    <item>
+      <title>Saviya – Session 1: Empowering Dreams Through Entrepreneurship</title>
+      <link>https://moraleoblog.vercel.app/?post=saviya-session-1-empowering-dreams-through-entrepreneurship</link>
+      <guid>https://moraleoblog.vercel.app/?post=saviya-session-1-empowering-dreams-through-entrepreneurship</guid>
+      <pubDate>Fri, 10 Jul 2026 00:00:00 GMT</pubDate>
+      <category>education</category>
+      <description>29 participants from unemployed and low-income families learned product costing, pricing, marketing, and business development at Hewagama Junior School.</description>
+    </item>
+    <item>
+      <title>Trust &amp; Loyalty: The Bonds That Hold Hearts Together</title>
+      <link>https://moraleoblog.vercel.app/?post=trust-loyalty-the-bonds-that-hold-hearts-together</link>
+      <guid>https://moraleoblog.vercel.app/?post=trust-loyalty-the-bonds-that-hold-hearts-together</guid>
+      <pubDate>Wed, 08 Jul 2026 00:00:00 GMT</pubDate>
+      <category>stories</category>
+      <description>There comes a moment in almost everyone's life when the crowd disappears. In that quiet silence, you begin to discover who truly belongs in your life.</description>
+    </item>
+    <item>
+      <title>TRI LIFE – Phase 01: Paws of Hope</title>
+      <link>https://moraleoblog.vercel.app/?post=tri-life-phase-01-paws-of-hope</link>
+      <guid>https://moraleoblog.vercel.app/?post=tri-life-phase-01-paws-of-hope</guid>
       <pubDate>Sun, 05 Jul 2026 00:00:00 GMT</pubDate>
-      <description>events article by Event Team</description>
+      <category>service</category>
+      <description>Six dedicated Leos travelled around Rawathawaththa, Moratuwa, feeding stray dogs as the first phase of the Paws of Hope initiative.</description>
     </item>
     <item>
-      <title>Community Care Day: Essentials Distributed to Families</title>
-      <link>https://moraleoblog.web.app/blog/index.html?post=community-care-day-essentials-distributed-to-families</link>
-      <guid>https://moraleoblog.web.app/blog/index.html?post=community-care-day-essentials-distributed-to-families</guid>
-      <pubDate>Sat, 04 Jul 2026 00:00:00 GMT</pubDate>
-      <description>service article by Service Wing</description>
+      <title>What Does It Mean to Be a Leo?</title>
+      <link>https://moraleoblog.vercel.app/?post=what-does-it-mean-to-be-a-leo</link>
+      <guid>https://moraleoblog.vercel.app/?post=what-does-it-mean-to-be-a-leo</guid>
+      <pubDate>Sun, 05 Jul 2026 00:00:00 GMT</pubDate>
+      <category>stories</category>
+      <description>Being a Leo is about much more than wearing a badge or attending meetings. It's about choosing to make a difference — through leadership, experience, and opportunity.</description>
     </item>
     <item>
-      <title>Leading with Empathy: Lessons from Team Coordinators</title>
-      <link>https://moraleoblog.web.app/blog/index.html?post=leading-with-empathy-lessons-from-team-coordinators</link>
-      <guid>https://moraleoblog.web.app/blog/index.html?post=leading-with-empathy-lessons-from-team-coordinators</guid>
-      <pubDate>Fri, 03 Jul 2026 00:00:00 GMT</pubDate>
-      <description>leadership article by Leadership Desk</description>
-    </item>
-    <item>
-      <title>Study Skills Session: Practical Tools for Freshers</title>
-      <link>https://moraleoblog.web.app/blog/index.html?post=study-skills-session-practical-tools-for-freshers</link>
-      <guid>https://moraleoblog.web.app/blog/index.html?post=study-skills-session-practical-tools-for-freshers</guid>
-      <pubDate>Thu, 02 Jul 2026 00:00:00 GMT</pubDate>
-      <description>education article by Education Team</description>
-    </item>
-    <item>
-      <title>Clean Campus Morning: Student Volunteers in Action</title>
-      <link>https://moraleoblog.web.app/blog/index.html?post=clean-campus-morning-student-volunteers-in-action</link>
-      <guid>https://moraleoblog.web.app/blog/index.html?post=clean-campus-morning-student-volunteers-in-action</guid>
+      <title>ALOKA'26 — Seeking Blessings for a New Leoistic Year</title>
+      <link>https://moraleoblog.vercel.app/?post=aloka26-seeking-blessings-for-a-new-leoistic-year</link>
+      <guid>https://moraleoblog.vercel.app/?post=aloka26-seeking-blessings-for-a-new-leoistic-year</guid>
       <pubDate>Wed, 01 Jul 2026 00:00:00 GMT</pubDate>
-      <description>environment article by Green Unit</description>
-    </item>
-    <item>
-      <title>Campus Wellness Week: Simple Habits for Better Health</title>
-      <link>https://moraleoblog.web.app/blog/index.html?post=campus-wellness-week-simple-habits-for-better-health</link>
-      <guid>https://moraleoblog.web.app/blog/index.html?post=campus-wellness-week-simple-habits-for-better-health</guid>
-      <pubDate>Tue, 30 Jun 2026 00:00:00 GMT</pubDate>
-      <description>health article by Health Desk</description>
-    </item>
-    <item>
-      <title>Tech for Service: Tools We Use to Run Better Projects</title>
-      <link>https://moraleoblog.web.app/blog/index.html?post=tech-for-service-tools-we-use-to-run-better-projects</link>
-      <guid>https://moraleoblog.web.app/blog/index.html?post=tech-for-service-tools-we-use-to-run-better-projects</guid>
-      <pubDate>Mon, 29 Jun 2026 00:00:00 GMT</pubDate>
-      <description>technology article by Tech Team</description>
-    </item>
-    <item>
-      <title>A Day That Changed Me: One Volunteer&apos;s Reflection</title>
-      <link>https://moraleoblog.web.app/blog/index.html?post=a-day-that-changed-me-one-volunteers-reflection</link>
-      <guid>https://moraleoblog.web.app/blog/index.html?post=a-day-that-changed-me-one-volunteers-reflection</guid>
-      <pubDate>Sun, 28 Jun 2026 00:00:00 GMT</pubDate>
-      <description>stories article by Ruvini De Silva</description>
-    </item>
-    <item>
-      <title>Recognition Night: Celebrating Outstanding Leo Impact</title>
-      <link>https://moraleoblog.web.app/blog/index.html?post=recognition-night-celebrating-outstanding-leo-impact</link>
-      <guid>https://moraleoblog.web.app/blog/index.html?post=recognition-night-celebrating-outstanding-leo-impact</guid>
-      <pubDate>Sat, 27 Jun 2026 00:00:00 GMT</pubDate>
-      <description>achievements article by Awards Committee</description>
-    </item>
-    <item>
-      <title>Blood Donation Drive: 150 Units Collected � Lives Saved in a Single Day</title>
-      <link>https://moraleoblog.web.app/blog/index.html?post=blood-donation-drive-150-units-collected-lives-saved-in-a-single-day</link>
-      <guid>https://moraleoblog.web.app/blog/index.html?post=blood-donation-drive-150-units-collected-lives-saved-in-a-single-day</guid>
-      <pubDate>Wed, 20 May 2026 00:00:00 GMT</pubDate>
-      <description>service article by Ravi Perera</description>
-    </item>
-    <item>
-      <title>Welcome to the Family: 23 New Leos Inducted into the Club for 2026</title>
-      <link>https://moraleoblog.web.app/blog/index.html?post=welcome-to-the-family-23-new-leos-inducted-into-the-club-for-2026</link>
-      <guid>https://moraleoblog.web.app/blog/index.html?post=welcome-to-the-family-23-new-leos-inducted-into-the-club-for-2026</guid>
-      <pubDate>Fri, 10 Apr 2026 00:00:00 GMT</pubDate>
-      <description>news article by Amaya Silva</description>
-    </item>
-    <item>
-      <title>Green Campus Initiative: 500 Trees Planted for a Greener Tomorrow</title>
-      <link>https://moraleoblog.web.app/blog/index.html?post=green-campus-initiative-500-trees-planted-for-a-greener-tomorrow</link>
-      <guid>https://moraleoblog.web.app/blog/index.html?post=green-campus-initiative-500-trees-planted-for-a-greener-tomorrow</guid>
-      <pubDate>Sun, 22 Mar 2026 00:00:00 GMT</pubDate>
-      <description>environment article by Sahan Fernando</description>
-    </item>
-    <item>
-      <title>Youth Leadership Summit 2026: Building Tomorrow&apos;s Leaders Today</title>
-      <link>https://moraleoblog.web.app/blog/index.html?post=youth-leadership-summit-2026-building-tomorrows-leaders-today</link>
-      <guid>https://moraleoblog.web.app/blog/index.html?post=youth-leadership-summit-2026-building-tomorrows-leaders-today</guid>
-      <pubDate>Sat, 14 Feb 2026 00:00:00 GMT</pubDate>
-      <description>events article by Dinusha Wijeratne</description>
-    </item>
-    <item>
-      <title>Digital Literacy Workshop: Teaching Seniors to Navigate the Digital World</title>
-      <link>https://moraleoblog.web.app/blog/index.html?post=digital-literacy-workshop-teaching-seniors-to-navigate-the-digital-world</link>
-      <guid>https://moraleoblog.web.app/blog/index.html?post=digital-literacy-workshop-teaching-seniors-to-navigate-the-digital-world</guid>
-      <pubDate>Sun, 18 Jan 2026 00:00:00 GMT</pubDate>
-      <description>education article by Punsara Dias</description>
-    </item>
-    <item>
-      <title>How Leo Changed My Life: A Member&apos;s Journey from Shy Fresher to Club Leader</title>
-      <link>https://moraleoblog.web.app/blog/index.html?post=how-leo-changed-my-life-a-members-journey-from-shy-fresher-to-club-leader</link>
-      <guid>https://moraleoblog.web.app/blog/index.html?post=how-leo-changed-my-life-a-members-journey-from-shy-fresher-to-club-leader</guid>
-      <pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate>
-      <description>stories article by Kasun Bandara</description>
-    </item>
-    <item>
-      <title>Christmas Charity Drive 2025: Bringing Joy and Hope to 300 Children</title>
-      <link>https://moraleoblog.web.app/blog/index.html?post=christmas-charity-drive-2025-bringing-joy-and-hope-to-300-children</link>
-      <guid>https://moraleoblog.web.app/blog/index.html?post=christmas-charity-drive-2025-bringing-joy-and-hope-to-300-children</guid>
-      <pubDate>Wed, 10 Dec 2025 00:00:00 GMT</pubDate>
-      <description>service article by Nadeeka Gunawardena</description>
-    </item>
-    <item>
-      <title>Mental Health Awareness Week: Breaking the Silence on Campus</title>
-      <link>https://moraleoblog.web.app/blog/index.html?post=mental-health-awareness-week-breaking-the-silence-on-campus</link>
-      <guid>https://moraleoblog.web.app/blog/index.html?post=mental-health-awareness-week-breaking-the-silence-on-campus</guid>
-      <pubDate>Mon, 10 Nov 2025 00:00:00 GMT</pubDate>
-      <description>health article by Thisara Ranasinghe</description>
+      <category>events</category>
+      <description>To mark the dawn of a new Leoistic year, the Leo Club of Moratuwa organised &quot;Aloka '26,&quot; an Ashirwada Pooja at Bellanwila Rajamaha Viharaya.</description>
     </item>
   </channel>
 </rss>
-
-
-

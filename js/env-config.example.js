@@ -1,6 +1,8 @@
+// Template for js/env-secrets.js: the Firebase "web app" settings of the Mora
+// Connect project (Firebase console > Project settings > Your apps).
 window.__LEO_ENV__ = {
   site: {
-    productionUrl: 'https://moraleoblog.web.app/blog',
+    productionUrl: 'https://moraleoblog.vercel.app',
   },
   firebase: {
     apiKey: 'REPLACE_WITH_API_KEY',
@@ -10,10 +12,4 @@ window.__LEO_ENV__ = {
     messagingSenderId: 'REPLACE_WITH_MESSAGING_SENDER_ID',
     appId: 'REPLACE_WITH_APP_ID',
   },
-  contentProvider: {
-    collection: 'posts',
-    apiKey: 'REPLACE_WITH_CONTENT_API_KEY',
-    projectId: 'REPLACE_WITH_CONTENT_PROJECT_ID',
-  },
 };
-

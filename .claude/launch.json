@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "blog",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [".claude/static-server.js"],
+      "port": 5173
+    },
+    {
+      "name": "blog-emulators",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [".claude/static-server.js", "5174"],
+      "port": 5174
+    }
+  ]
+}

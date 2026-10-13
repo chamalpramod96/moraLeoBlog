@@ -38,6 +38,13 @@
     return noopNull();
   };
 
+  ContentService.prototype.getPostContentHtml = function (postId) {
+    if (typeof this.provider.getPostContentHtml === 'function') {
+      return this.provider.getPostContentHtml(postId);
+    }
+    return '';
+  };
+
   ContentService.prototype.getFeaturedPost = function () {
     if (typeof this.provider.getFeaturedPost === 'function') {
       return this.provider.getFeaturedPost();

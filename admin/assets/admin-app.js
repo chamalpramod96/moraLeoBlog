@@ -1,97 +1,149 @@
 (function () {
   const cfg = window.ADMIN_CONFIG;
   const svc = window.AdminFirebase;
+  const env = window.LEO_ENV;
+  const safe = window.SafeHtml;
+
+  const $ = (id) => document.getElementById(id);
 
   const els = {
-    loginView: document.getElementById("loginView"),
-    adminView: document.getElementById("adminView"),
-    loginForm: document.getElementById("loginForm"),
-    loginEmail: document.getElementById("loginEmail"),
-    loginPassword: document.getElementById("loginPassword"),
-    logoutBtn: document.getElementById("logoutBtn"),
-    authBadge: document.getElementById("authBadge"),
+    bootView: $("bootView"),
+    loginView: $("loginView"),
+    accessView: $("accessView"),
+    appView: $("appView"),
+    loginForm: $("loginForm"),
+    loginEmail: $("loginEmail"),
+    loginPassword: $("loginPassword"),
+    togglePassword: $("togglePassword"),
+    loginError: $("loginError"),
+    loginBtn: $("loginBtn"),
+    logoutBtn: $("logoutBtn"),
+    authBadge: $("authBadge"),
 
-    statPosts: document.getElementById("statPosts"),
-    statDrafts: document.getElementById("statDrafts"),
-    statPublished: document.getElementById("statPublished"),
+    accessMessage: $("accessMessage"),
+    verifyBtn: $("verifyBtn"),
+    recheckBtn: $("recheckBtn"),
+    accessSignOutBtn: $("accessSignOutBtn"),
 
-    postList: document.getElementById("postList"),
-    newPostBtn: document.getElementById("newPostBtn"),
-    postSearch: document.getElementById("postSearch"),
-    statusFilter: document.getElementById("statusFilter"),
+    statPosts: $("statPosts"),
+    statDrafts: $("statDrafts"),
+    statReview: $("statReview"),
+    statPublished: $("statPublished"),
 
-    editorTitle: document.getElementById("editorTitle"),
-    postForm: document.getElementById("postForm"),
-    postId: document.getElementById("postId"),
-    postTitle: document.getElementById("postTitle"),
-    postSlug: document.getElementById("postSlug"),
-    postExcerpt: document.getElementById("postExcerpt"),
-    postCategory: document.getElementById("postCategory"),
-    postTags: document.getElementById("postTags"),
-    postAuthor: document.getElementById("postAuthor"),
-    postReadTime: document.getElementById("postReadTime"),
-    postStatus: document.getElementById("postStatus"),
-    postFeatured: document.getElementById("postFeatured"),
-    coverUpload: document.getElementById("coverUpload"),
-    coverImageUrl: document.getElementById("coverImageUrl"),
-    seoTitle: document.getElementById("seoTitle"),
-    seoDescription: document.getElementById("seoDescription"),
-    seoKeywords: document.getElementById("seoKeywords"),
+    postList: $("postList"),
+    newPostBtn: $("newPostBtn"),
+    postSearch: $("postSearch"),
+    statusFilter: $("statusFilter"),
 
-    previewBtn: document.getElementById("previewBtn"),
-    saveDraftBtn: document.getElementById("saveDraftBtn"),
-    publishBtn: document.getElementById("publishBtn"),
-    deleteBtn: document.getElementById("deleteBtn"),
+    chiefTools: $("chiefTools"),
+    editorsBtn: $("editorsBtn"),
+    importBtn: $("importBtn"),
+    rebuildBtn: $("rebuildBtn"),
 
-    previewTitle: document.getElementById("previewTitle"),
-    previewImage: document.getElementById("previewImage"),
-    previewMeta: document.getElementById("previewMeta"),
-    previewExcerpt: document.getElementById("previewExcerpt"),
-    previewContent: document.getElementById("previewContent"),
+    editorTitle: $("editorTitle"),
+    statusBadge: $("statusBadge"),
+    lockNote: $("lockNote"),
+    postForm: $("postForm"),
+    postTitle: $("postTitle"),
+    postSlug: $("postSlug"),
+    postExcerpt: $("postExcerpt"),
+    postCategory: $("postCategory"),
+    postTags: $("postTags"),
+    postAuthor: $("postAuthor"),
+    postReadTime: $("postReadTime"),
+    postDate: $("postDate"),
+    postFeatured: $("postFeatured"),
+    coverUpload: $("coverUpload"),
+    coverNote: $("coverNote"),
+    removeCoverBtn: $("removeCoverBtn"),
+    seoTitle: $("seoTitle"),
+    seoDescription: $("seoDescription"),
+    seoKeywords: $("seoKeywords"),
 
-    toast: document.getElementById("toast"),
+    saveBtn: $("saveBtn"),
+    reviewBtn: $("reviewBtn"),
+    publishBtn: $("publishBtn"),
+    unpublishBtn: $("unpublishBtn"),
+    deleteBtn: $("deleteBtn"),
+
+    previewTitle: $("previewTitle"),
+    previewImage: $("previewImage"),
+    previewMeta: $("previewMeta"),
+    previewExcerpt: $("previewExcerpt"),
+    previewContent: $("previewContent"),
+
+    editorsPanel: $("editorsPanel"),
+    editorsList: $("editorsList"),
+    editorForm: $("editorForm"),
+    editorEmail: $("editorEmail"),
+    editorName: $("editorName"),
+    editorRole: $("editorRole"),
+
+    toast: $("toast"),
   };
 
   const appState = {
     posts: [],
-    filteredPosts: [],
-    editor: null,
-    user: null,
-    loadedPostId: null,
-    canWrite: false,
+    editor: null,        // the rich-text editor
+    access: null,        // the signed-in editor: { uid, email, role, name, … }
+    loadedPost: null,    // the post in the form; null while writing a new one
+    coverPath: "",       // the cover the form holds (a Storage path or a site file)
     localPreviewImageUrl: null,
+    busy: false,
+    loginMessage: "",    // shown on the sign-in screen the next time it appears (e.g. "Access denied: …")
   };
 
-  const slugify = window.TextUtils?.slugify || ((value) => String(value || "").trim().toLowerCase());
-  const splitCsv = window.TextUtils?.splitCsv || ((value) => String(value || "").split(",").map((item) => item.trim()).filter(Boolean));
-  const fallbackCategories = [
-    "general",
-    "achievements",
-    "education",
-    "environment",
-    "events",
-    "health",
-    "leadership",
-    "news",
-    "service",
-    "stories",
-    "technology",
-  ];
+  const slugify = window.TextUtils.slugify;
+  const splitCsv = window.TextUtils.splitCsv;
+  const esc = safe.escapeHtml;
+
+  // The same categories as the tabs on the blog
+  const CATEGORIES = ["news", "events", "service", "leadership", "education", "environment", "health", "technology", "stories", "achievements"];
+  const STATUS_LABELS = { draft: "Draft", review: "Waiting for review", published: "Published" };
+  const ROLE_LABELS = { editor: "Editor", chiefEditor: "Chief editor" };
+
+  // Kept in step with the rules (portal-rules/firestore-blog.rules), so a post
+  // that is too long is explained here instead of being refused there
+  const LIMITS = { title: 200, slug: 120, excerpt: 600, author: 100, readTime: 30, tags: 15, content: 300000 };
+  const COVER_MAX_SIDE = 1600;
+  const COVER_MAX_BYTES = 3 * 1024 * 1024;
+
+  const capitalise = (value) => String(value || "").replace(/^./, (m) => m.toUpperCase());
 
   function toast(message, isError) {
     els.toast.textContent = message;
     els.toast.className = isError ? "toast show error" : "toast show";
-    setTimeout(() => {
+    clearTimeout(toast.timer);
+    toast.timer = setTimeout(() => {
       els.toast.className = "toast";
-    }, 2200);
+    }, isError ? 7000 : 2600);
   }
 
-  function parseTags(value) {
-    return splitCsv(value);
+  function describeError(err) {
+    const code = String((err && err.code) || "");
+    if (code === "permission-denied" || code === "storage/unauthorized") {
+      return "You don't have permission to do this. If your role changed, sign out and in again.";
+    }
+    if (code === "auth/network-request-failed" || code === "unavailable") {
+      return "No connection. Check the internet and try again.";
+    }
+    return (err && err.message) || "Something went wrong.";
   }
 
-  function toKeywords(value) {
-    return splitCsv(value);
+  /** What the sign-in screen says when a sign-in fails — the same words as the club website's admin. */
+  function signInErrorMessage(err) {
+    const code = String((err && err.code) || "");
+    if (["auth/invalid-credential", "auth/wrong-password", "auth/user-not-found", "auth/invalid-email", "auth/missing-password"].includes(code)) {
+      return "Invalid email or password.";
+    }
+    if (code === "auth/too-many-requests") return "Too many failed attempts. Please try again later.";
+    if (code === "auth/user-disabled") return "This Mora Connect account has been disabled.";
+    if (code === "auth/network-request-failed") {
+      return "Could not reach Mora Connect’s sign-in service. Check your internet connection and try again.";
+    }
+    // The details are for whoever looks after the site, not for the sign-in screen
+    console.error("[sign-in]", err);
+    return "Mora Connect’s sign-in service is not accepting sign-ins from this website right now.";
   }
 
   function hasFirebaseConfig() {
@@ -99,66 +151,119 @@
     return !!(fb && fb.apiKey && fb.projectId && fb.authDomain && fb.storageBucket && fb.appId);
   }
 
-  function defaultPost() {
-    return {
-      title: "",
-      slug: "",
-      excerpt: "",
-      category: "general",
-      tags: [],
-      author: "",
-      readTime: "",
-      status: "draft",
-      featured: false,
-      coverImage: "",
-      contentHtml: "",
-      seo: {
-        title: "",
-        description: "",
-        keywords: [],
-      },
-      publishedAt: "",
-    };
+  const isChief = () => !!appState.access && appState.access.role === "chiefEditor";
+
+  /** New posts: any editor. Existing ones: a chief editor, or the writer until it is published. */
+  function canEdit(post) {
+    if (!appState.access) return false;
+    if (isChief() || !post) return true;
+    return post.createdByUid === appState.access.uid && post.status !== "published";
   }
+
+  function todayLocal() {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
+  // ── Views ──────────────────────────────────────────────────────────────────
+
+  /** One of: "boot" (checking who is signed in), "login", "access" (verify your email), "admin". */
+  function showView(name) {
+    els.bootView.hidden = name !== "boot";
+    els.loginView.hidden = name !== "login";
+    els.accessView.hidden = name !== "access";
+    els.appView.hidden = name !== "admin";
+    setLoginBusy(false);
+  }
+
+  function setLoginBusy(busy) {
+    els.loginBtn.querySelector("span").textContent = busy ? "Signing in…" : "Sign in";
+    els.loginBtn.disabled = busy;
+  }
+
+  function showLoginError(message) {
+    els.loginError.textContent = message;
+    els.loginError.hidden = !message;
+    if (!message) return;
+    els.loginForm.classList.remove("shake");
+    void els.loginForm.offsetWidth; // restart the animation if it is already running
+    els.loginForm.classList.add("shake");
+  }
+
+  /** Signs the account out and says why on the sign-in screen (see leaveAdmin). */
+  async function refuse(message) {
+    appState.loginMessage = message;
+    await svc.authSignOut();
+  }
+
+  async function enterAdmin() {
+    const access = await svc.getAccess(cfg);
+    if (!access) return;
+    appState.access = access;
+
+    if (!ROLE_LABELS[access.role]) {
+      await refuse(`Access denied: only blog editors can sign in here. Ask a chief editor to add ${access.email}.`);
+      return;
+    }
+    if (!access.activeMember) {
+      await refuse("Access denied: your Mora Connect account is not an active member.");
+      return;
+    }
+    if (!access.verified) {
+      // The one case that stays signed in: the verification email is sent from this account
+      els.accessMessage.textContent =
+        `Editors need a verified email. Send a verification email to ${access.email}, open the link in it, then press “Check again”.`;
+      showView("access");
+      return;
+    }
+
+    els.authBadge.textContent = `${access.name} · ${ROLE_LABELS[access.role]}`;
+    els.chiefTools.hidden = !isChief();
+    els.editorsPanel.hidden = true;
+    showView("admin");
+    await refreshPosts();
+    resetToNewPost();
+  }
+
+  /** Signed out: nothing of the last editor's work stays on the page. */
+  function leaveAdmin() {
+    appState.access = null;
+    appState.posts = [];
+    appState.loadedPost = null;
+    appState.coverPath = "";
+    els.postList.innerHTML = "";
+    els.editorsList.innerHTML = "";
+    els.postForm.reset();
+    if (appState.editor) appState.editor.setData("");
+    els.authBadge.textContent = "";
+    showView("login");
+    showLoginError(appState.loginMessage);
+    appState.loginMessage = "";
+    els.loginEmail.focus();
+  }
+
+  // ── Post list ──────────────────────────────────────────────────────────────
 
   function renderStats(posts) {
-    const drafts = posts.filter((p) => p.status === "draft").length;
-    const published = posts.filter((p) => p.status === "published").length;
+    const count = (status) => posts.filter((p) => p.status === status).length;
     els.statPosts.textContent = String(posts.length);
-    els.statDrafts.textContent = String(drafts);
-    els.statPublished.textContent = String(published);
-  }
-
-  function releaseLocalPreviewImage() {
-    if (appState.localPreviewImageUrl) {
-      URL.revokeObjectURL(appState.localPreviewImageUrl);
-      appState.localPreviewImageUrl = null;
-    }
-  }
-
-  function setWriteControlsEnabled(enabled) {
-    appState.canWrite = !!enabled;
-    [
-      els.saveDraftBtn,
-      els.publishBtn,
-      els.deleteBtn,
-    ].forEach((el) => {
-      if (!el) return;
-      el.disabled = !enabled;
-    });
-  }
-
-  function getIndexCategories() {
-    const posts = Array.isArray(window.BLOG_POST_INDEX) ? window.BLOG_POST_INDEX : [];
-    return posts.map((p) => String(p && p.category ? p.category : "").trim()).filter(Boolean);
+    els.statDrafts.textContent = String(count("draft"));
+    els.statReview.textContent = String(count("review"));
+    els.statPublished.textContent = String(count("published"));
   }
 
   function postItemHtml(post) {
-    const safeTitle = (post.title || "Untitled").replace(/</g, "&lt;");
+    const status = STATUS_LABELS[post.status] ? post.status : "draft";
+    const mine = post.createdByUid === appState.access.uid;
+    const active = appState.loadedPost && appState.loadedPost.id === post.id;
     return `
-      <button class="post-item" data-id="${post.id}">
-        <strong>${safeTitle}</strong>
-        <span>${post.status || "draft"}</span>
+      <button type="button" class="post-item${active ? " active" : ""}" data-id="${esc(post.id)}">
+        <span class="post-item-text">
+          <strong>${esc(post.title || "Untitled")}</strong>
+          <small>${esc(post.date || "no date yet")}${mine ? " · yours" : ""}</small>
+        </span>
+        <span class="status-badge ${status}">${STATUS_LABELS[status]}</span>
       </button>
     `;
   }
@@ -167,65 +272,36 @@
     const q = els.postSearch.value.trim().toLowerCase();
     const s = els.statusFilter.value;
 
-    appState.filteredPosts = appState.posts.filter((p) => {
+    const shown = appState.posts.filter((p) => {
       const matchesQuery = !q || [p.title, p.slug, p.author].join(" ").toLowerCase().includes(q);
-      const matchesStatus = s === "all" || (p.status || "draft") === s;
+      const matchesStatus = s === "all" || p.status === s;
       return matchesQuery && matchesStatus;
     });
 
-    els.postList.innerHTML = appState.filteredPosts.map(postItemHtml).join("") || '<p class="muted">No posts found.</p>';
+    els.postList.innerHTML = shown.map(postItemHtml).join("") || '<p class="muted">No posts found.</p>';
 
     Array.from(els.postList.querySelectorAll(".post-item")).forEach((btn) => {
       btn.addEventListener("click", () => {
-        const id = btn.getAttribute("data-id");
-        loadPostToForm(id);
+        const post = appState.posts.find((p) => p.id === btn.getAttribute("data-id"));
+        if (post) writeForm(post);
       });
     });
   }
 
-  function fillCategories(categories) {
-    const merged = [...new Set([
-      ...fallbackCategories,
-      ...getIndexCategories(),
-      ...(Array.isArray(categories) ? categories : []),
-    ].map((v) => String(v || "").trim().toLowerCase()).filter(Boolean))];
-    els.postCategory.innerHTML = merged.map((c) => `<option value="${c}">${c}</option>`).join("");
+  async function refreshPosts() {
+    appState.posts = await svc.listPosts(cfg);
+    renderStats(appState.posts);
+    renderPostList();
+  }
+
+  // ── The form ───────────────────────────────────────────────────────────────
+
+  function fillCategories() {
+    els.postCategory.innerHTML = CATEGORIES.map((c) => `<option value="${c}">${capitalise(c)}</option>`).join("");
   }
 
   function hasSlugConflict(slugValue, currentId) {
-    const target = String(slugValue || "").trim().toLowerCase();
-    if (!target) return false;
-    return appState.posts.some((p) => {
-      const postId = String(p.id || "").trim();
-      const postSlug = String(p.slug || "").trim().toLowerCase();
-      return postSlug === target && postId !== String(currentId || "").trim();
-    });
-  }
-
-  function applySaveMode(payload, mode) {
-    if (mode === "draft") {
-      payload.status = "draft";
-      payload.publishedAt = "";
-      payload.date = "";
-      return;
-    }
-
-    if (mode === "publish") {
-      const iso = new Date().toISOString();
-      payload.status = "published";
-      payload.publishedAt = iso;
-      payload.date = iso.slice(0, 10);
-      return;
-    }
-
-    if (payload.status === "published") {
-      const iso = payload.publishedAt || new Date().toISOString();
-      payload.publishedAt = iso;
-      payload.date = iso.slice(0, 10);
-    } else {
-      payload.publishedAt = "";
-      payload.date = "";
-    }
+    return appState.posts.some((p) => p.slug === slugValue && p.id !== currentId);
   }
 
   function readForm() {
@@ -234,227 +310,574 @@
       slug: els.postSlug.value.trim(),
       excerpt: els.postExcerpt.value.trim(),
       category: els.postCategory.value,
-      tags: parseTags(els.postTags.value),
+      tags: splitCsv(els.postTags.value),
       author: els.postAuthor.value.trim(),
       readTime: els.postReadTime.value.trim(),
-      status: els.postStatus.value,
+      date: els.postDate.value,
       featured: els.postFeatured.value === "true",
-      coverImage: els.coverImageUrl.value.trim(),
       contentHtml: appState.editor ? appState.editor.getData() : "",
       seo: {
         title: els.seoTitle.value.trim(),
         description: els.seoDescription.value.trim(),
-        keywords: toKeywords(els.seoKeywords.value),
+        keywords: splitCsv(els.seoKeywords.value),
       },
-      publishedAt: els.postStatus.value === "published" ? new Date().toISOString() : "",
     };
   }
 
+  /** Puts a post into the form — or, with nothing, starts an empty new one. */
   function writeForm(post) {
-    const p = { ...defaultPost(), ...post, seo: { ...defaultPost().seo, ...(post.seo || {}) } };
-    els.postId.value = post.id || "";
-    els.postTitle.value = p.title;
-    els.postSlug.value = p.slug;
-    els.postExcerpt.value = p.excerpt;
-    els.postCategory.value = p.category || "general";
-    els.postTags.value = (p.tags || []).join(", ");
-    els.postAuthor.value = p.author || "";
-    els.postReadTime.value = p.readTime || "";
-    els.postStatus.value = p.status || "draft";
-    els.postFeatured.value = String(!!p.featured);
-    els.coverImageUrl.value = p.coverImage || "";
-    els.seoTitle.value = p.seo.title || "";
-    els.seoDescription.value = p.seo.description || "";
-    els.seoKeywords.value = (p.seo.keywords || []).join(", ");
+    const p = post || {};
+    const seo = p.seo || {};
+    appState.loadedPost = post || null;
+    appState.coverPath = p.coverImage || "";
 
+    els.postTitle.value = p.title || "";
+    els.postSlug.value = p.slug || "";
+    els.postExcerpt.value = p.excerpt || "";
+    els.postCategory.value = CATEGORIES.includes(p.category) ? p.category : CATEGORIES[0];
+    els.postTags.value = (p.tags || []).join(", ");
+    els.postAuthor.value = post ? p.author || "" : appState.access.name;
+    els.postReadTime.value = p.readTime || "";
+    els.postDate.value = p.date || "";
+    els.postFeatured.value = String(!!p.featured);
+    els.coverUpload.value = "";
+    els.seoTitle.value = seo.title || "";
+    els.seoDescription.value = seo.description || "";
+    els.seoKeywords.value = (seo.keywords || []).join(", ");
     if (appState.editor) appState.editor.setData(p.contentHtml || "");
 
-    els.deleteBtn.hidden = !post.id;
-    els.editorTitle.textContent = post.id ? "Edit Post" : "Create Post";
-    appState.loadedPostId = post.id || null;
-
+    els.editorTitle.textContent = post ? "Edit Post" : "Create Post";
+    applyPermissions();
+    renderPostList();
     renderPreview();
   }
 
-  async function refreshPostsAndUi() {
-    appState.posts = await svc.listPosts(cfg);
-    renderStats(appState.posts);
-    renderPostList();
+  function resetToNewPost() {
+    writeForm(null);
   }
 
-  async function loadPostToForm(id) {
-    const p = await svc.getPost(cfg, id);
-    if (!p) return toast("Post not found", true);
-    writeForm(p);
+  /** Shows the buttons this editor may use on the post in the form, and locks the rest. */
+  function applyPermissions() {
+    const post = appState.loadedPost;
+    const status = post ? post.status : "draft";
+    const editable = canEdit(post);
+    const chief = isChief();
+
+    els.statusBadge.textContent = post ? STATUS_LABELS[status] : "New";
+    els.statusBadge.className = `status-badge ${post ? status : "draft"}`;
+
+    els.lockNote.hidden = editable;
+    if (!editable) {
+      els.lockNote.textContent = status === "published"
+        ? "This post is published. Only a chief editor can change it."
+        : "This post belongs to another editor. You can read it, but not change it.";
+    }
+
+    Array.from(els.postForm.querySelectorAll("input, textarea, select")).forEach((field) => {
+      field.disabled = !editable;
+    });
+    // Featuring a post is the chief editor's decision
+    els.postFeatured.disabled = !editable || !chief;
+    if (appState.editor) {
+      if (editable) appState.editor.disableReadOnlyMode("blog-admin");
+      else appState.editor.enableReadOnlyMode("blog-admin");
+    }
+
+    els.saveBtn.hidden = !editable;
+    els.reviewBtn.hidden = !(editable && !chief && status === "draft");
+    els.publishBtn.hidden = !(chief && status !== "published");
+    els.unpublishBtn.hidden = !(editable && post && status !== "draft");
+    els.unpublishBtn.textContent = status === "published" ? "Unpublish" : "Back to draft";
+    els.deleteBtn.hidden = !(editable && post);
+
+    renderCoverNote();
   }
 
-  async function maybeUploadCover() {
-    const file = els.coverUpload.files && els.coverUpload.files[0];
-    if (!file) return null;
-    const url = await svc.uploadCoverImage(file, cfg);
-    els.coverImageUrl.value = url;
-    return url;
+  function renderCoverNote() {
+    const editable = canEdit(appState.loadedPost);
+    const picked = els.coverUpload.files && els.coverUpload.files[0];
+    els.coverNote.textContent = picked
+      ? "The new picture is uploaded when you save."
+      : appState.coverPath
+        ? "This post has a cover picture. Choose a file to replace it."
+        : "JPG, PNG or WebP. Large photos are made smaller before upload.";
+    els.removeCoverBtn.hidden = !(editable && appState.coverPath && !picked);
   }
 
-  async function savePost(mode) {
-    try {
-      if (!appState.canWrite) {
-        toast("Your account is signed in but does not have admin publish permissions.", true);
-        return;
-      }
+  function setBusy(busy) {
+    appState.busy = busy;
+    [els.saveBtn, els.reviewBtn, els.publishBtn, els.unpublishBtn, els.deleteBtn,
+      els.importBtn, els.rebuildBtn, els.newPostBtn].forEach((btn) => {
+      btn.disabled = busy;
+    });
+  }
 
-      if (!els.postTitle.value.trim()) {
-        toast("Title is required", true);
-        return;
-      }
+  // ── Preview ────────────────────────────────────────────────────────────────
 
-      if (!els.postSlug.value.trim()) {
-        els.postSlug.value = slugify(els.postTitle.value);
-      }
-
-      const existingId = els.postId.value.trim();
-      if (hasSlugConflict(els.postSlug.value, existingId)) {
-        toast("Slug already exists. Please use a unique slug.", true);
-        return;
-      }
-
-      await maybeUploadCover();
-
-      const payload = readForm();
-      applySaveMode(payload, mode);
-
-      if (existingId) {
-        await svc.updatePost(cfg, existingId, payload);
-        await svc.ensureTaxonomyDocs(cfg, payload.category, payload.tags);
-        toast("Post updated");
-      } else {
-        const newId = await svc.createPost(cfg, payload);
-        await svc.ensureTaxonomyDocs(cfg, payload.category, payload.tags);
-        els.postId.value = newId;
-        toast("Post created");
-      }
-
-      await refreshPostsAndUi();
-      await loadPostToForm(els.postId.value.trim());
-    } catch (err) {
-      if (err && (err.code === "storage/unauthorized" || err.code === "permission-denied")) {
-        toast("Publish blocked: this account has no admin claim for Firestore/Storage writes.", true);
-        return;
-      }
-      toast(err.message || "Save failed", true);
+  function releaseLocalPreviewImage() {
+    if (appState.localPreviewImageUrl) {
+      URL.revokeObjectURL(appState.localPreviewImageUrl);
+      appState.localPreviewImageUrl = null;
     }
   }
 
-  async function deleteCurrentPost() {
-    const id = els.postId.value.trim();
-    if (!id) return;
-    const ok = window.confirm("Delete this post permanently?");
-    if (!ok) return;
+  let previewRun = 0;
 
-    try {
-      await svc.deletePost(cfg, id);
-      writeForm(defaultPost());
-      els.postId.value = "";
-      await refreshPostsAndUi();
-      toast("Post deleted");
-    } catch (err) {
-      toast(err.message || "Delete failed", true);
-    }
-  }
-
-  function renderPreview() {
+  async function renderPreview() {
     const p = readForm();
+    const status = appState.loadedPost ? appState.loadedPost.status : "draft";
     els.previewTitle.textContent = p.title || "Post title preview";
-    els.previewMeta.textContent = `${p.category || "general"} | ${p.status || "draft"} | ${p.readTime || "read time"}`;
+    els.previewMeta.textContent = `${capitalise(p.category)} | ${STATUS_LABELS[status]} | ${p.readTime || "read time"}`;
     els.previewExcerpt.textContent = p.excerpt || "Excerpt preview...";
-    els.previewContent.innerHTML = p.contentHtml || "<p>Content preview...</p>";
 
     const file = els.coverUpload.files && els.coverUpload.files[0];
-    if (file) {
-      releaseLocalPreviewImage();
-      appState.localPreviewImageUrl = URL.createObjectURL(file);
-      els.previewImage.src = appState.localPreviewImageUrl;
-      els.previewImage.hidden = false;
-      return;
-    }
-
     releaseLocalPreviewImage();
-    if (p.coverImage) {
-      els.previewImage.src = p.coverImage;
+    if (file) {
+      appState.localPreviewImageUrl = URL.createObjectURL(file);
+    }
+    const imageUrl = appState.localPreviewImageUrl || env.coverUrl(appState.coverPath, "../");
+    if (imageUrl) {
+      els.previewImage.src = imageUrl;
       els.previewImage.hidden = false;
     } else {
       els.previewImage.removeAttribute("src");
       els.previewImage.hidden = true;
     }
+
+    // Shown exactly as the blog will show it: cleaned of anything that could run code
+    const run = ++previewRun;
+    const html = await safe.clean(p.contentHtml);
+    if (run === previewRun) {
+      els.previewContent.innerHTML = html || "<p>Content preview...</p>";
+    }
   }
 
-  function resetToNewPost() {
-    writeForm(defaultPost());
-    els.postId.value = "";
-    els.coverUpload.value = "";
-    releaseLocalPreviewImage();
+  // ── Cover picture ──────────────────────────────────────────────────────────
+
+  function loadPicture(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("This picture could not be read. Try another one.")); };
+      img.src = url;
+    });
   }
+
+  /** A phone photo is several MB; the blog needs far less. Returns what to upload. */
+  async function shrinkPicture(file) {
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+      throw new Error("Use a JPG, PNG or WebP picture for the cover.");
+    }
+    const img = await loadPicture(file);
+    const scale = Math.min(1, COVER_MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
+    if (scale === 1 && file.size <= 400 * 1024) {
+      return { blob: file, type: file.type };
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff"; // a see-through PNG would otherwise turn black as a JPG
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
+    if (!blob) throw new Error("This picture could not be read. Try another one.");
+    if (blob.size >= COVER_MAX_BYTES) throw new Error("This picture is too large even after shrinking. Try another one.");
+    return { blob, type: "image/jpeg" };
+  }
+
+  // ── Saving ─────────────────────────────────────────────────────────────────
+
+  /** A message if the form can't be saved as it is, otherwise "". */
+  function formProblem(form, slug, currentId) {
+    if (!form.title) return "Title is required.";
+    if (form.title.length > LIMITS.title) return `The title is too long (at most ${LIMITS.title} characters).`;
+    if (!slug) return "Add a slug using English letters or numbers (it becomes the post's link).";
+    if (slug.length > LIMITS.slug) return `The slug is too long (at most ${LIMITS.slug} characters).`;
+    if (hasSlugConflict(slug, currentId)) return "Another post already uses this slug. Please change it.";
+    if (form.excerpt.length > LIMITS.excerpt) return `The excerpt is too long (at most ${LIMITS.excerpt} characters).`;
+    if (form.tags.length > LIMITS.tags) return `Too many tags (at most ${LIMITS.tags}).`;
+    if (form.contentHtml.length > LIMITS.content) return "The article is too long to save. Please shorten it.";
+    return "";
+  }
+
+  /** The list the public blog reads: one entry per published post, no article text. */
+  async function publishList() {
+    const entries = appState.posts
+      .filter((p) => p.status === "published")
+      .sort((a, b) => String(b.date).localeCompare(String(a.date)))
+      .map((p) => ({
+        id: p.id,
+        slug: p.slug,
+        title: p.title,
+        excerpt: p.excerpt || "",
+        category: p.category,
+        author: p.author || "",
+        date: p.date || "",
+        readTime: p.readTime || "",
+        tags: p.tags || [],
+        coverImage: p.coverImage || "",
+        featured: !!p.featured,
+      }));
+    try {
+      await svc.writePublishedList(cfg, entries);
+      return true;
+    } catch (err) {
+      toast("Saved, but the blog's list of posts could not be updated. Press “Refresh public list”.", true);
+      return false;
+    }
+  }
+
+  /** `targetStatus` moves the post to that status; without it the post keeps the one it has. */
+  async function savePost(targetStatus) {
+    if (appState.busy) return;
+    const post = appState.loadedPost;
+    if (!canEdit(post)) {
+      toast("You can't change this post.", true);
+      return;
+    }
+
+    const form = readForm();
+    const slug = slugify(form.slug || form.title);
+    els.postSlug.value = slug;
+    const problem = formProblem(form, slug, post ? post.id : null);
+    if (problem) {
+      toast(problem, true);
+      return;
+    }
+
+    const status = targetStatus || (post ? post.status : "draft");
+    if (status === "published" && !isChief()) {
+      toast("Only a chief editor can publish. Send it for review instead.", true);
+      return;
+    }
+    // A published post always has a date; it is set once and then left alone
+    const date = form.date || (status === "published" ? todayLocal() : "");
+
+    setBusy(true);
+    try {
+      const id = post ? post.id : svc.newPostId(cfg);
+      const wasPublished = !!post && post.status === "published";
+      const previousCover = post ? post.coverImage || "" : "";
+
+      let coverImage = appState.coverPath;
+      const file = els.coverUpload.files && els.coverUpload.files[0];
+      if (file) {
+        const picture = await shrinkPicture(file);
+        coverImage = await svc.uploadCover(cfg, id, picture.blob, picture.type);
+      }
+
+      const now = svc.nowIso();
+      await svc.savePost(cfg, id, {
+        title: form.title,
+        slug,
+        excerpt: form.excerpt,
+        category: form.category,
+        tags: form.tags,
+        author: form.author.slice(0, LIMITS.author),
+        readTime: form.readTime.slice(0, LIMITS.readTime),
+        status,
+        featured: isChief() ? form.featured : !!(post && post.featured),
+        coverImage,
+        contentHtml: form.contentHtml,
+        seo: form.seo,
+        date,
+        publishedAt: (post && post.publishedAt) || (status === "published" ? now : ""),
+        createdAt: post ? post.createdAt : now,
+        updatedAt: now,
+        createdByUid: post ? post.createdByUid : appState.access.uid,
+        updatedByUid: appState.access.uid,
+      });
+
+      if (previousCover && previousCover !== coverImage && previousCover.startsWith(`${cfg.storage.postsPath}/`) && isChief()) {
+        await svc.deleteImage(previousCover);
+      }
+
+      await refreshPosts();
+      const listOk = isChief() && (wasPublished || status === "published") ? await publishList() : true;
+      writeForm(appState.posts.find((p) => p.id === id) || null);
+
+      if (listOk) {
+        toast(
+          targetStatus === "published" ? "Published — it is on the blog now."
+            : targetStatus === "review" ? "Sent for review."
+              : targetStatus === "draft" && wasPublished ? "Unpublished — it is a draft again."
+                : "Saved."
+        );
+      }
+    } catch (err) {
+      toast(describeError(err), true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteCurrentPost() {
+    const post = appState.loadedPost;
+    if (appState.busy || !post || !canEdit(post)) return;
+    if (!window.confirm(`Delete “${post.title}” permanently?`)) return;
+
+    setBusy(true);
+    try {
+      await svc.deletePost(cfg, post.id);
+      if (isChief() && String(post.coverImage || "").startsWith(`${cfg.storage.postsPath}/`)) {
+        await svc.deleteImage(post.coverImage);
+      }
+      await refreshPosts();
+      const listOk = isChief() && post.status === "published" ? await publishList() : true;
+      resetToNewPost();
+      if (listOk) toast("Post deleted.");
+    } catch (err) {
+      toast(describeError(err), true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function rebuildPublicList() {
+    if (appState.busy) return;
+    setBusy(true);
+    try {
+      await refreshPosts();
+      if (await publishList()) toast("The blog's list of posts is up to date.");
+    } catch (err) {
+      toast(describeError(err), true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // ── Import of the site's hand-written articles (chief editors) ─────────────
+
+  /** Reads the articles in js/articles/*.js into the same shape as a post. */
+  function readSiteArticles() {
+    const holder = document.createElement("template"); // keeps the HTML inert while it is read
+    holder.innerHTML = (window.BLOG_ARTICLES_PARTS || []).join("\n");
+
+    return Array.from(holder.content.querySelectorAll("article.blog-card")).map((card) => {
+      const text = (selector) => {
+        const el = card.querySelector(selector);
+        return el ? el.textContent.replace(/\s+/g, " ").trim() : "";
+      };
+      const title = text(".card-title");
+      const image = card.querySelector("img.card-image");
+      const cover = image ? image.getAttribute("src") || "" : "";
+
+      let contentHtml = "";
+      let tags = [];
+      const template = card.querySelector("template.post-full-content");
+      if (template) {
+        const body = template.content.cloneNode(true);
+        tags = Array.from(body.querySelectorAll(".content-tags .tag")).map((t) => t.textContent.trim()).filter(Boolean);
+        // The blog adds the heading, the date line and the tags itself
+        body.querySelectorAll(".content-tags, .content-meta").forEach((node) => node.remove());
+        const heading = body.querySelector("h2");
+        if (heading) heading.remove();
+        const box = document.createElement("div");
+        box.appendChild(body);
+        contentHtml = box.innerHTML.trim();
+      }
+
+      return {
+        title,
+        slug: slugify(title),
+        excerpt: text(".card-excerpt").slice(0, LIMITS.excerpt),
+        category: String(card.dataset.category || "").toLowerCase(),
+        tags: tags.slice(0, LIMITS.tags),
+        author: text(".post-author-sm span").slice(0, LIMITS.author),
+        readTime: text(".card-info").slice(0, LIMITS.readTime),
+        coverImage: /^images\/[A-Za-z0-9/_.-]+$/.test(cover) ? cover : "",
+        contentHtml,
+        date: String(card.dataset.date || ""),
+      };
+    });
+  }
+
+  async function importSiteArticles() {
+    if (appState.busy || !isChief()) return;
+
+    setBusy(true);
+    try {
+      await refreshPosts();
+      const taken = new Set(appState.posts.map((p) => p.slug));
+      const articles = readSiteArticles().filter((a) =>
+        a.title && a.slug && !taken.has(a.slug) &&
+        CATEGORIES.includes(a.category) && /^\d{4}-\d{2}-\d{2}$/.test(a.date));
+
+      if (!articles.length) {
+        toast("Nothing to import — every site article is already here.");
+        return;
+      }
+      const ok = window.confirm(
+        `Copy ${articles.length} article(s) from the site into the admin panel as published posts?\n\n` +
+        "They stay on the blog, shown newest first. From then on they are edited here.");
+      if (!ok) return;
+
+      const now = svc.nowIso();
+      await svc.importPosts(cfg, articles.map((a) => ({
+        ...a,
+        status: "published",
+        featured: false,
+        seo: { title: "", description: "", keywords: [] },
+        publishedAt: `${a.date}T00:00:00.000Z`,
+        createdAt: now,
+        updatedAt: now,
+        createdByUid: appState.access.uid,
+        updatedByUid: appState.access.uid,
+      })));
+
+      await refreshPosts();
+      if (await publishList()) toast(`Imported ${articles.length} article(s).`);
+    } catch (err) {
+      toast(describeError(err), true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // ── Editors list (chief editors) ───────────────────────────────────────────
+
+  async function renderEditors() {
+    const editors = await svc.listEditors(cfg);
+    els.editorsList.innerHTML = editors.map((editor) => {
+      const self = editor.email === appState.access.email;
+      const other = editor.role === "chiefEditor" ? "editor" : "chiefEditor";
+      return `
+        <div class="editor-row">
+          <span class="editor-who">
+            <strong>${esc(editor.name)}</strong>
+            <small>${esc(editor.email)}</small>
+          </span>
+          <span class="status-badge ${editor.role === "chiefEditor" ? "published" : "draft"}">${esc(ROLE_LABELS[editor.role] || editor.role)}</span>
+          ${self ? '<span class="muted">you</span>' : `
+            <button type="button" class="btn secondary small" data-act="role" data-email="${esc(editor.email)}" data-name="${esc(editor.name)}" data-role="${other}">Make ${ROLE_LABELS[other].toLowerCase()}</button>
+            <button type="button" class="btn danger small" data-act="remove" data-email="${esc(editor.email)}">Remove</button>`}
+        </div>
+      `;
+    }).join("") || '<p class="muted">No editors yet.</p>';
+  }
+
+  async function onEditorsListClick(event) {
+    const btn = event.target.closest("button[data-act]");
+    if (!btn) return;
+    const email = btn.getAttribute("data-email");
+    try {
+      if (btn.getAttribute("data-act") === "remove") {
+        if (!window.confirm(`Remove ${email} from the blog editors?`)) return;
+        await svc.removeEditor(cfg, email);
+        toast("Editor removed.");
+      } else {
+        await svc.saveEditor(cfg, email, { role: btn.getAttribute("data-role"), name: btn.getAttribute("data-name") });
+        toast("Role changed.");
+      }
+      await renderEditors();
+    } catch (err) {
+      toast(describeError(err), true);
+    }
+  }
+
+  async function addEditor(event) {
+    event.preventDefault();
+    const email = els.editorEmail.value.trim().toLowerCase();
+    const name = els.editorName.value.trim();
+    if (!email || !name) return;
+    if (email === appState.access.email) {
+      toast("You can't change your own entry.", true);
+      return;
+    }
+    try {
+      await svc.saveEditor(cfg, email, { role: els.editorRole.value, name });
+      els.editorForm.reset();
+      await renderEditors();
+      toast("Editor added. They can sign in with their Mora Connect account.");
+    } catch (err) {
+      toast(describeError(err), true);
+    }
+  }
+
+  async function toggleEditorsPanel() {
+    const open = els.editorsPanel.hidden;
+    els.editorsPanel.hidden = !open;
+    if (!open) return;
+    try {
+      await renderEditors();
+      els.editorsPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (err) {
+      toast(describeError(err), true);
+    }
+  }
+
+  // ── Start-up ───────────────────────────────────────────────────────────────
 
   async function initEditor() {
-    appState.editor = await ClassicEditor.create(document.getElementById("postContentEditor"));
+    appState.editor = await ClassicEditor.create($("postContentEditor"), {
+      // Pictures inside the article and video embeds are left out: nothing here uploads them yet
+      toolbar: ["heading", "|", "bold", "italic", "link", "bulletedList", "numberedList", "blockQuote", "insertTable", "|", "undo", "redo"],
+      // The blog styles <h3> as an article's section heading (its title is the <h2>)
+      heading: {
+        options: [
+          { model: "paragraph", title: "Paragraph", class: "ck-heading_paragraph" },
+          { model: "heading2", view: "h3", title: "Heading", class: "ck-heading_heading2" },
+          { model: "heading3", view: "h4", title: "Small heading", class: "ck-heading_heading3" },
+        ],
+      },
+    });
     appState.editor.model.document.on("change:data", () => {
       renderPreview();
     });
   }
 
-  function setSignedIn(user) {
-    appState.user = user;
-    const signedIn = !!user;
-    els.loginView.hidden = signedIn;
-    els.adminView.hidden = !signedIn;
-    els.logoutBtn.hidden = !signedIn;
-    els.authBadge.textContent = signedIn ? `Signed in: ${user.email}` : "Signed out";
-    if (!signedIn) {
-      setWriteControlsEnabled(false);
-    }
-  }
-
-  async function syncPermissionsUi(user) {
-    if (!user) {
-      setWriteControlsEnabled(false);
-      return;
-    }
-
-    try {
-      const claims = await svc.getAuthClaims(true);
-      const canWrite = !!claims.admin;
-      setWriteControlsEnabled(canWrite);
-      if (!canWrite) {
-        els.authBadge.textContent = `Signed in: ${user.email} (no admin claim)`;
-        toast("Login works, but publish/save needs admin custom claim in Firebase.", true);
-      }
-    } catch (err) {
-      setWriteControlsEnabled(false);
-      toast("Could not verify admin permissions. Please re-login.", true);
-    }
-  }
-
-  async function hydrateAdmin() {
-    const categories = await svc.listCategories(cfg).catch(() => []);
-    fillCategories(categories);
-    await refreshPostsAndUi();
-    resetToNewPost();
-  }
-
   function wireEvents() {
     els.loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
+      const email = els.loginEmail.value.trim();
+      const password = els.loginPassword.value;
+      if (!email || !password) {
+        showLoginError("Enter your email and password.");
+        return;
+      }
+
+      showLoginError("");
+      setLoginBusy(true);
       try {
-        await svc.authSignIn(els.loginEmail.value.trim(), els.loginPassword.value);
-        toast("Signed in");
+        await svc.authSignIn(email, password);
+        els.loginPassword.value = "";
+        // The button stays busy until the panel — or a refusal — is on screen (see showView)
       } catch (err) {
-        toast(err.message || "Sign-in failed", true);
+        setLoginBusy(false);
+        showLoginError(signInErrorMessage(err));
       }
     });
 
-    els.logoutBtn.addEventListener("click", async () => {
-      await svc.authSignOut();
-      toast("Signed out");
+    els.togglePassword.addEventListener("click", () => {
+      const show = els.loginPassword.type === "password";
+      els.loginPassword.type = show ? "text" : "password";
+      els.togglePassword.setAttribute("aria-label", show ? "Hide password" : "Show password");
+      els.togglePassword.firstElementChild.className = `fas ${show ? "fa-eye-slash" : "fa-eye"}`;
+    });
+
+    els.logoutBtn.addEventListener("click", () => svc.authSignOut());
+    els.accessSignOutBtn.addEventListener("click", () => svc.authSignOut());
+
+    els.verifyBtn.addEventListener("click", async () => {
+      try {
+        await svc.sendVerificationEmail();
+        toast(`Verification email sent to ${appState.access.email}. Check your inbox and spam folder.`);
+      } catch (err) {
+        toast(describeError(err), true);
+      }
+    });
+
+    els.recheckBtn.addEventListener("click", async () => {
+      try {
+        await svc.refreshUser();
+        await enterAdmin();
+      } catch (err) {
+        toast(describeError(err), true);
+      }
     });
 
     els.newPostBtn.addEventListener("click", () => {
@@ -466,22 +889,21 @@
     els.statusFilter.addEventListener("change", renderPostList);
 
     els.postTitle.addEventListener("input", () => {
-      if (!els.postId.value.trim()) {
+      if (!appState.loadedPost) {
         els.postSlug.value = slugify(els.postTitle.value);
       }
-      renderPreview();
     });
 
     [
+      els.postTitle,
       els.postSlug,
       els.postExcerpt,
       els.postCategory,
       els.postTags,
       els.postAuthor,
       els.postReadTime,
-      els.postStatus,
+      els.postDate,
       els.postFeatured,
-      els.coverImageUrl,
       els.seoTitle,
       els.seoDescription,
       els.seoKeywords,
@@ -490,39 +912,60 @@
       input.addEventListener("change", renderPreview);
     });
 
-    els.coverUpload.addEventListener("change", renderPreview);
+    els.coverUpload.addEventListener("change", () => {
+      renderCoverNote();
+      renderPreview();
+    });
+    els.removeCoverBtn.addEventListener("click", () => {
+      appState.coverPath = "";
+      renderCoverNote();
+      renderPreview();
+      toast("The cover picture is removed when you save.");
+    });
 
-    els.previewBtn.addEventListener("click", renderPreview);
-    els.saveDraftBtn.addEventListener("click", () => savePost("draft"));
-    els.publishBtn.addEventListener("click", () => savePost("publish"));
+    els.saveBtn.addEventListener("click", () => savePost(null));
+    els.reviewBtn.addEventListener("click", () => savePost("review"));
+    els.publishBtn.addEventListener("click", () => savePost("published"));
+    els.unpublishBtn.addEventListener("click", () => savePost("draft"));
     els.deleteBtn.addEventListener("click", deleteCurrentPost);
+
+    els.editorsBtn.addEventListener("click", toggleEditorsPanel);
+    els.importBtn.addEventListener("click", importSiteArticles);
+    els.rebuildBtn.addEventListener("click", rebuildPublicList);
+    els.editorsList.addEventListener("click", onEditorsListClick);
+    els.editorForm.addEventListener("submit", addEditor);
   }
 
   async function main() {
     try {
       if (!hasFirebaseConfig()) {
-        toast("Firebase environment config is missing. Load js/env-config.js with production values.", true);
+        showView("login");
+        showLoginError("Sign-in is not set up yet.");
         return;
       }
 
+      fillCategories();
       svc.initFirebase(cfg);
       await initEditor();
       wireEvents();
 
+      // Fires once at start-up (someone is already signed in, or nobody is) and at every sign-in / sign-out
       svc.onAuthChange(async (user) => {
         try {
-          setSignedIn(user);
-          if (user) {
-            await syncPermissionsUi(user);
-            await hydrateAdmin();
+          if (!user) {
+            leaveAdmin();
+            return;
           }
+          await enterAdmin();
         } catch (err) {
-          toast(err.message || "Could not load admin data.", true);
+          // Signed in, but the panel could not be loaded: back to the sign-in screen with the reason
+          await refuse(describeError(err)).catch(() => leaveAdmin());
         }
       });
     } catch (err) {
-      toast(err.message || "Initialization failed", true);
       console.error(err);
+      showView("login");
+      showLoginError(describeError(err));
     }
   }
 

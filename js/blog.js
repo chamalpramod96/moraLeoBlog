@@ -710,12 +710,9 @@ function initFilter() {
     if (activePostSlug) {
       const target = filtered.find(card => normalizeToken(card.dataset.slug || '') === activePostSlug);
       if (target && autoOpenedPostSlug !== activePostSlug) {
-        const template = target.querySelector('template.post-full-content');
         const title = target.querySelector('.card-title')?.textContent.trim() || 'Article';
-        if (template) {
-          autoOpenedPostSlug = activePostSlug;
-          openModal(template.innerHTML, title);
-        }
+        autoOpenedPostSlug = activePostSlug;
+        openCardArticle(target, title);
       }
     }
   }
@@ -790,12 +787,14 @@ function initFilter() {
    MODAL — open / close article reader
 ─────────────────────────────────────────────────────────── */
 let _currentPostTitle = 'Leo Club of Moratuwa Blog';
+let _modalVisit = 0;   /* goes up each time the reader opens or closes an article */
 
 function openModal(contentHTML, title) {
   const overlay   = document.getElementById('modalOverlay');
   const contentEl = document.getElementById('modalContent');
   if (!overlay || !contentEl) return;
 
+  _modalVisit += 1;
   _currentPostTitle = title || 'Leo Club of Moratuwa Blog';
   contentEl.innerHTML = contentHTML;
   overlay.classList.add('open');
@@ -806,9 +805,31 @@ function openModal(contentHTML, title) {
 
 function closeModal() {
   const overlay = document.getElementById('modalOverlay');
+  _modalVisit += 1;
   overlay?.classList.remove('open');
   document.body.style.overflow = '';
   setPostUrlState('');
+}
+
+/* Opens a card's article. A site article carries its text in a <template>;
+   a post written in the admin panel is fetched when the reader opens it. */
+async function openCardArticle(card, title) {
+  const template = card.querySelector('template.post-full-content');
+  if (template) {
+    openModal(template.innerHTML, title);
+    return;
+  }
+
+  openModal('<p class="content-loading">Loading article…</p>', title);
+  const visit = _modalVisit;
+  const html = await Promise.resolve(window.ContentService?.getPostContentHtml?.(card.dataset.postId) || '');
+
+  /* The reader may have closed it, or opened another one, while it loaded */
+  if (visit !== _modalVisit) return;
+  const contentEl = document.getElementById('modalContent');
+  if (contentEl) {
+    contentEl.innerHTML = html || '<p class="content-loading">This article could not be loaded. Please try again.</p>';
+  }
 }
 
 /* Called by the featured post "Read More" button */
@@ -853,12 +874,10 @@ function initModal() {
 function initCardClicks() {
   document.querySelectorAll('.blog-card').forEach(card => {
     card.addEventListener('click', () => {
-      const template = card.querySelector('template.post-full-content');
-      if (!template) return;
       const title = card.querySelector('.card-title')?.textContent.trim() || 'Article';
       const slug = card.dataset.slug || normalizeToken(title);
       setPostUrlState(slug);
-      openModal(template.innerHTML, title);
+      openCardArticle(card, title);
     });
   });
 }

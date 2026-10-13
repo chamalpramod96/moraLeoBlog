@@ -1,0 +1,12 @@
+# Files kept in the repo but not published on the live site
+ARTICLE_AUTHORING_GUIDE.md
+production-readiness-report.md
+seo.config.json
+js/env-config.example.js
+
+# The blog's part of the Mora Connect security rules. It is copied into the
+# moraLeoPortal project and deployed from there, never from here.
+portal-rules
+
+# Only used to run the site on a developer's own computer
+.claude

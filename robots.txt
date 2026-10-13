@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /admin/
 
-Sitemap: https://moraleoblog.web.app/blog/sitemap.xml
+Sitemap: https://moraleoblog.vercel.app/sitemap.xml

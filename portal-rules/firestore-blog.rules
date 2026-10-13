@@ -1,0 +1,134 @@
+    // ─────────────────────────────────────────────────────────────────────────
+    // HOW TO USE THIS FILE
+    // This is NOT a complete rules file. Paste everything below into
+    // moraLeoPortal/firestore.rules, just above the "Deny everything else"
+    // block at the bottom. Never deploy this file on its own.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // BLOG (moraLeoBlog) — edited from the blog's /admin page
+    // ═════════════════════════════════════════════════════════════════════════
+    // Blog editors live in blogEditors/{email}, a list of their own: being on it
+    // gives nothing in the portal, and a portal role gives nothing on the blog.
+    // An editor must be an ACTIVE MEMBER with a VERIFIED email — sign-up is
+    // open, so without that anyone could register an editor's address first,
+    // and a member who leaves the club loses the blog too.
+    // Roles: 'chiefEditor' (publishes, deletes, manages this list) and 'editor'
+    // (writes their own drafts and sends them for review).
+
+    function blogEditorDoc() {
+      return /databases/$(database)/documents/blogEditors/$(request.auth.token.email);
+    }
+
+    function isBlogEditor() {
+      return isActiveMember() &&
+        request.auth.token.email_verified == true &&
+        exists(blogEditorDoc());
+    }
+
+    function isBlogChief() {
+      return isBlogEditor() && get(blogEditorDoc()).data.role == 'chiefEditor';
+    }
+
+    function isBlogText(v, min, max) {
+      return v is string && v.size() >= min && v.size() <= max;
+    }
+
+    // ── Blog editors ─────────────────────────────────────────────────────────
+    match /blogEditors/{email} {
+      // Anyone signed in may read their OWN entry (the admin page checks it and
+      // tells them what is missing); only chief editors see the whole list
+      allow read: if (isAuthenticated() && request.auth.token.email == email) ||
+        isBlogChief();
+
+      // Doc ids are lowercase emails (Firebase Auth lowercases them too, so a
+      // mixed-case id never matches). A chief editor can't demote themselves,
+      // so the blog always keeps one.
+      allow create, update: if isBlogChief() &&
+        email == email.lower() &&
+        request.resource.data.keys().hasOnly(['role', 'name']) &&
+        request.resource.data.role in ['chiefEditor', 'editor'] &&
+        isBlogText(request.resource.data.name, 1, 100) &&
+        (request.auth.token.email != email || request.resource.data.role == 'chiefEditor');
+
+      allow delete: if isBlogChief() && request.auth.token.email != email;
+    }
+
+    // ── Blog posts ───────────────────────────────────────────────────────────
+    // The cover image is a Storage path under blog/… or a file of the blog site
+    // itself (images/…) — never a full URL, so a post can't point at an outside
+    // image. People are recorded by account id, never by email: published posts
+    // are readable by everyone.
+    function isValidBlogPost(d) {
+      return d.keys().hasOnly(['title', 'slug', 'excerpt', 'category', 'tags', 'author', 'readTime',
+                               'status', 'featured', 'coverImage', 'contentHtml', 'seo', 'date',
+                               'publishedAt', 'createdAt', 'updatedAt', 'createdByUid', 'updatedByUid']) &&
+        isBlogText(d.title, 1, 200) &&
+        d.slug is string && d.slug.size() <= 120 && d.slug.matches('[a-z0-9]+(-[a-z0-9]+)*') &&
+        isBlogText(d.excerpt, 0, 600) &&
+        d.category is string && d.category.matches('[a-z]{2,30}') &&
+        d.tags is list && d.tags.size() <= 15 &&
+        isBlogText(d.author, 0, 100) &&
+        isBlogText(d.readTime, 0, 30) &&
+        d.status in ['draft', 'review', 'published'] &&
+        d.featured is bool &&
+        d.coverImage is string &&
+        (d.coverImage == '' ||
+         d.coverImage.matches('blog/[^/]+/[^/]+') ||
+         d.coverImage.matches('images/[A-Za-z0-9/_.-]+')) &&
+        isBlogText(d.contentHtml, 0, 300000) &&
+        d.seo is map &&
+        d.date is string && (d.date == '' || d.date.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')) &&
+        (d.status != 'published' || d.date != '') &&
+        isBlogText(d.publishedAt, 0, 40) &&
+        isBlogText(d.createdAt, 1, 40) &&
+        isBlogText(d.updatedAt, 1, 40) &&
+        d.updatedByUid == request.auth.uid;
+    }
+
+    match /blogPosts/{postId} {
+      // Visitors open ONE published post at a time (the list they see is
+      // blogIndex/current below); only editors can list, drafts included
+      allow get:  if resource.data.status == 'published' || isBlogEditor();
+      allow list: if isBlogEditor();
+
+      // An editor starts drafts under their own account; publishing and
+      // featuring are the chief editor's decisions
+      allow create: if isBlogEditor() &&
+        isValidBlogPost(request.resource.data) &&
+        request.resource.data.createdByUid == request.auth.uid &&
+        (isBlogChief() ||
+         (request.resource.data.status in ['draft', 'review'] &&
+          request.resource.data.featured == false));
+
+      // An editor changes only their own post, and only until it is published
+      allow update: if isBlogEditor() &&
+        isValidBlogPost(request.resource.data) &&
+        request.resource.data.createdByUid == resource.data.createdByUid &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        (isBlogChief() ||
+         (resource.data.createdByUid == request.auth.uid &&
+          resource.data.status in ['draft', 'review'] &&
+          request.resource.data.status in ['draft', 'review'] &&
+          request.resource.data.featured == resource.data.featured));
+
+      allow delete: if isBlogChief() ||
+        (isBlogEditor() &&
+         resource.data.createdByUid == request.auth.uid &&
+         resource.data.status in ['draft', 'review']);
+    }
+
+    // ── Published list ──────────────────────────────────────────────────────
+    // One document (blogIndex/current) with the title, excerpt, date… of every
+    // published post — no article text. The blog reads it once per visit, so a
+    // visit costs one read however many posts there are. Chief editors' admin
+    // page rewrites it after every publish, unpublish or delete.
+    match /blogIndex/{docId} {
+      allow read:  if true;
+      allow write: if isBlogChief() &&
+        docId == 'current' &&
+        request.resource.data.keys().hasOnly(['posts', 'updatedAt']) &&
+        request.resource.data.posts is list &&
+        request.resource.data.posts.size() <= 1000 &&
+        isBlogText(request.resource.data.updatedAt, 1, 40);
+    }

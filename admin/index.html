@@ -5,76 +5,160 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Leo Club of Moratuwa Blog Admin</title>
   <meta name="robots" content="noindex,nofollow" />
+  <!-- Only this site's own scripts and the three libraries below may run here.
+       The 127.0.0.1 addresses are the local Firebase emulators (testing only). -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://cdn.ckeditor.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https: http://127.0.0.1:9198; connect-src 'self' https://*.googleapis.com http://127.0.0.1:9099 http://127.0.0.1:8181 http://127.0.0.1:9198; object-src 'none'; base-uri 'self'; form-action 'self'" />
+  <meta name="theme-color" content="#080001" />
+  <link rel="icon" type="image/png" sizes="192x192" href="../images/logos/logo-192.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha384-/o6I2CkkWC//PSjvWC/eYN7l3xM3tJm8ZzVkCOfp//W05QcE3mlGskpoHB6XqI+B" crossorigin="anonymous" />
   <link rel="stylesheet" href="./assets/admin.css" />
   <script src="../js/env-secrets.js"></script>
   <script src="../js/env-config.js"></script>
   <script src="../js/shared/text-utils.js"></script>
+  <script src="../js/shared/safe-html.js"></script>
 </head>
 <body>
   <div id="appRoot" class="app-root">
+    <!-- Shown for a moment while we check whether someone is already signed in -->
+    <div class="boot" id="bootView"><i class="fas fa-circle-notch fa-spin"></i></div>
+
+    <!-- ===== SIGN IN — the same screen as the club website's admin ===== -->
+    <div class="login" id="loginView" hidden>
+
+      <!-- Left: brand panel (decorative — hidden on phones) -->
+      <section class="login-brand" aria-hidden="true">
+        <div class="login-kanji">武</div>
+        <img class="login-watermark" src="../images/logos/logo-512.png" alt="" loading="lazy" />
+        <div class="login-brand-inner">
+          <div class="brand-row">
+            <img src="../images/logos/logo-192.png" alt="" />
+            <span>Leo Club <b>of Moratuwa</b></span>
+          </div>
+          <h1>Bold in <span>Service.</span><br>United in <span>Purpose.</span></h1>
+          <p>The editors' desk for The Leo Chronicle. Write and publish the club's stories without touching any code.</p>
+          <ul class="login-points">
+            <li><i class="fas fa-pen-nib"></i> Write a story and save it as a draft</li>
+            <li><i class="fas fa-user-check"></i> A chief editor reviews and publishes it</li>
+            <li><i class="fas fa-image"></i> Cover photos are resized for you</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Right: the form -->
+      <section class="login-panel">
+        <form class="login-card" id="loginForm" novalidate>
+          <img class="login-logo" src="../images/logos/logo-192.png" alt="Leo Club of Moratuwa" />
+          <p class="eyebrow">Blog Admin</p>
+          <h2>Welcome back</h2>
+          <p class="login-sub">Sign in with your Mora Connect account.</p>
+          <p class="login-note"><i class="fas fa-shield-halved"></i><span>Only blog editors can sign in.</span></p>
+
+          <label class="field">
+            <span>Email</span>
+            <div class="input-wrap">
+              <i class="fas fa-envelope"></i>
+              <input type="email" id="loginEmail" autocomplete="username" placeholder="you@example.com" required />
+            </div>
+          </label>
+
+          <label class="field">
+            <span>Password</span>
+            <div class="input-wrap">
+              <i class="fas fa-lock"></i>
+              <input type="password" id="loginPassword" autocomplete="current-password" placeholder="Your password" required />
+              <button type="button" class="icon-btn" id="togglePassword" aria-label="Show password"><i class="fas fa-eye"></i></button>
+            </div>
+          </label>
+
+          <p class="form-error" id="loginError" role="alert" hidden></p>
+
+          <button type="submit" class="login-btn" id="loginBtn">
+            <span>Sign in</span><i class="fas fa-arrow-right"></i>
+          </button>
+
+          <a class="back-link" href="../"><i class="fas fa-arrow-left"></i> Back to the blog</a>
+        </form>
+        <p class="login-foot">&copy; 2026 Leo Club of Moratuwa &middot; Authorised editors only</p>
+      </section>
+    </div>
+
+    <!-- Signed in, but the email is not verified yet: the same card, one job -->
+    <div class="login-panel solo" id="accessView" hidden>
+      <div class="login-card">
+        <img class="login-logo" src="../images/logos/logo-192.png" alt="Leo Club of Moratuwa" />
+        <p class="eyebrow">Blog Admin</p>
+        <h2 id="accessTitle">Verify your email</h2>
+        <p class="login-sub" id="accessMessage"></p>
+        <button type="button" class="login-btn" id="verifyBtn"><i class="fas fa-paper-plane"></i><span>Send verification email</span></button>
+        <button type="button" class="login-btn ghost" id="recheckBtn"><i class="fas fa-rotate"></i><span>Check again</span></button>
+        <button type="button" class="back-link" id="accessSignOutBtn"><i class="fas fa-arrow-left"></i> Sign in with another account</button>
+      </div>
+    </div>
+
+    <!-- ===== THE PANEL ===== -->
+    <div id="appView" hidden>
     <header class="topbar">
       <div class="brand">Leo Club of Moratuwa Blog</div>
       <div class="topbar-actions">
-        <span id="authBadge" class="auth-badge">Signed out</span>
-        <button id="logoutBtn" class="btn secondary" hidden>Logout</button>
+        <a class="topbar-link" href="../" target="_blank" rel="noopener">View blog</a>
+        <span id="authBadge" class="auth-badge"></span>
+        <button id="logoutBtn" class="btn secondary">Sign out</button>
       </div>
     </header>
 
     <main class="main-layout">
-      <section id="loginView" class="panel auth-panel">
-        <h1>Admin Login</h1>
-        <p>Sign in to manage blog content.</p>
-        <form id="loginForm" class="form-grid" autocomplete="on">
-          <label>Email
-            <input id="loginEmail" type="email" required />
-          </label>
-          <label>Password
-            <input id="loginPassword" type="password" required />
-          </label>
-          <button type="submit" class="btn">Sign In</button>
-        </form>
-      </section>
-
-      <section id="adminView" class="admin-view" hidden>
+      <section id="adminView" class="admin-view">
         <aside class="panel sidebar">
           <h2>Dashboard</h2>
           <div class="stats">
             <div class="stat-card"><strong id="statPosts">0</strong><span>Total Posts</span></div>
             <div class="stat-card"><strong id="statDrafts">0</strong><span>Drafts</span></div>
+            <div class="stat-card"><strong id="statReview">0</strong><span>Waiting for review</span></div>
             <div class="stat-card"><strong id="statPublished">0</strong><span>Published</span></div>
           </div>
 
           <div class="toolbar">
-            <button id="newPostBtn" class="btn">+ Create Post</button>
+            <button type="button" id="newPostBtn" class="btn">+ Create Post</button>
             <input id="postSearch" type="search" placeholder="Search posts..." />
             <select id="statusFilter">
               <option value="all">All Status</option>
               <option value="draft">Draft</option>
+              <option value="review">Waiting for review</option>
               <option value="published">Published</option>
             </select>
           </div>
 
           <div id="postList" class="post-list"></div>
+
+          <div id="chiefTools" class="chief-tools" hidden>
+            <h3>Chief editor</h3>
+            <button type="button" id="editorsBtn" class="btn secondary">Manage editors</button>
+            <button type="button" id="importBtn" class="btn secondary">Import site articles</button>
+            <button type="button" id="rebuildBtn" class="btn secondary">Refresh public list</button>
+          </div>
         </aside>
 
         <section class="panel editor-panel">
-          <h2 id="editorTitle">Create Post</h2>
-          <form id="postForm" class="form-grid" novalidate>
-            <input type="hidden" id="postId" />
+          <div class="editor-head">
+            <h2 id="editorTitle">Create Post</h2>
+            <span id="statusBadge" class="status-badge draft">Draft</span>
+          </div>
+          <p id="lockNote" class="lock-note" hidden></p>
 
+          <form id="postForm" class="form-grid" novalidate>
             <label>Title
-              <input id="postTitle" required />
+              <input id="postTitle" maxlength="200" required />
             </label>
 
             <label>Slug
-              <input id="postSlug" required />
+              <input id="postSlug" maxlength="120" placeholder="made from the title" />
             </label>
 
             <label>Excerpt
-              <textarea id="postExcerpt" rows="3"></textarea>
+              <textarea id="postExcerpt" rows="3" maxlength="600"></textarea>
             </label>
 
             <label>Category
@@ -86,18 +170,16 @@
             </label>
 
             <label>Author
-              <input id="postAuthor" />
+              <input id="postAuthor" maxlength="100" />
             </label>
 
             <label>Read Time
-              <input id="postReadTime" placeholder="4 min read" />
+              <input id="postReadTime" maxlength="30" placeholder="4 min read" />
             </label>
 
-            <label>Status
-              <select id="postStatus">
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-              </select>
+            <label>Date shown on the blog
+              <input id="postDate" type="date" />
+              <span class="hint">Leave empty to use the day it is published.</span>
             </label>
 
             <label>Featured Post
@@ -108,9 +190,10 @@
             </label>
 
             <label>Cover Image
-              <input id="coverUpload" type="file" accept="image/*" />
-              <input id="coverImageUrl" placeholder="or paste image URL" />
+              <input id="coverUpload" type="file" accept="image/jpeg,image/png,image/webp" />
+              <span id="coverNote" class="hint"></span>
             </label>
+            <button type="button" id="removeCoverBtn" class="btn secondary small" hidden>Remove cover image</button>
 
             <div class="editor-group">
               <label>Content (Rich Text Editor)</label>
@@ -120,10 +203,10 @@
             <fieldset class="seo-box">
               <legend>SEO</legend>
               <label>SEO Title
-                <input id="seoTitle" />
+                <input id="seoTitle" maxlength="200" />
               </label>
               <label>SEO Description
-                <textarea id="seoDescription" rows="2"></textarea>
+                <textarea id="seoDescription" rows="2" maxlength="400"></textarea>
               </label>
               <label>SEO Keywords (comma separated)
                 <input id="seoKeywords" />
@@ -131,9 +214,10 @@
             </fieldset>
 
             <div class="actions-row">
-              <button type="button" id="previewBtn" class="btn secondary">Preview</button>
-              <button type="button" id="saveDraftBtn" class="btn secondary">Save Draft</button>
+              <button type="button" id="saveBtn" class="btn">Save</button>
+              <button type="button" id="reviewBtn" class="btn secondary">Send for review</button>
               <button type="button" id="publishBtn" class="btn">Publish</button>
+              <button type="button" id="unpublishBtn" class="btn secondary">Unpublish</button>
               <button type="button" id="deleteBtn" class="btn danger" hidden>Delete</button>
             </div>
           </form>
@@ -149,8 +233,33 @@
             <div id="previewContent"></div>
           </article>
         </section>
+
+        <section id="editorsPanel" class="panel editors-panel" hidden>
+          <h2>Blog editors</h2>
+          <p class="muted">
+            Editors sign in with their Mora Connect account. They must be active members with a verified email.
+            An editor writes drafts and sends them for review; a chief editor publishes and manages this list.
+          </p>
+          <div id="editorsList" class="editors-list"></div>
+          <form id="editorForm" class="editor-add-form">
+            <label>Mora Connect email
+              <input id="editorEmail" type="email" required />
+            </label>
+            <label>Name
+              <input id="editorName" maxlength="100" required />
+            </label>
+            <label>Role
+              <select id="editorRole">
+                <option value="editor">Editor</option>
+                <option value="chiefEditor">Chief editor</option>
+              </select>
+            </label>
+            <button type="submit" class="btn">Add editor</button>
+          </form>
+        </section>
       </section>
     </main>
+    </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </div>
@@ -162,7 +271,18 @@
 
   <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
 
-  <script src="../js/articles-index.js"></script>
+  <!-- The site's hand-written articles, for "Import site articles" -->
+  <script src="../js/articles/news.js"></script>
+  <script src="../js/articles/events.js"></script>
+  <script src="../js/articles/service.js"></script>
+  <script src="../js/articles/leadership.js"></script>
+  <script src="../js/articles/education.js"></script>
+  <script src="../js/articles/environment.js"></script>
+  <script src="../js/articles/health.js"></script>
+  <script src="../js/articles/technology.js"></script>
+  <script src="../js/articles/stories.js"></script>
+  <script src="../js/articles/achievements.js"></script>
+
   <script src="./assets/firebase-services.js"></script>
   <script src="./assets/admin-app.js"></script>
 </body>

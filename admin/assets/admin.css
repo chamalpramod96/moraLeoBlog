@@ -75,45 +75,13 @@ body {
   border-color: var(--line-accent);
 }
 
-.auth-panel {
-  max-width: 560px;
-  margin: 4rem auto;
-  padding: 1.6rem;
-  border-color: var(--line-accent);
-  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.55), 0 15px 45px rgba(212, 175, 55, 0.18);
-}
-
-.auth-panel h1 {
-  margin: 0;
-  font-family: "Poppins", "Segoe UI", Tahoma, sans-serif;
-  font-size: clamp(2rem, 4vw, 2.4rem);
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  line-height: 1.2;
-  color: var(--ink);
-}
-
-.auth-panel h1::after {
-  content: "";
-  display: block;
-  width: 120px;
-  height: 2px;
-  margin-top: 0.65rem;
-  background: linear-gradient(90deg, var(--accent), transparent);
-}
-
-.auth-panel p {
-  margin: 0.9rem 0 1rem;
-  font-size: 1rem;
-  color: var(--muted);
-}
-
 .admin-view {
   display: grid;
   grid-template-columns: 320px minmax(500px, 1fr);
   grid-template-areas:
     "sidebar editor"
-    "preview preview";
+    "preview preview"
+    "editors editors";
   gap: 1rem;
   align-items: start;
 }
@@ -209,6 +177,7 @@ select {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 0.55rem 0.65rem;
+  font-family: inherit;
   font-size: 0.95rem;
   color: var(--ink);
   background: var(--panel-alt);
@@ -227,8 +196,15 @@ select:focus {
   gap: 0.3rem;
 }
 
+/* The rich-text editor is a white page of its own, so it needs dark text
+   (it would otherwise take this panel's white text and show nothing) */
 .ck-editor__editable_inline {
   min-height: 260px;
+  color: #1b1b1b;
+}
+
+.ck-editor__editable_inline a {
+  color: var(--brand-strong);
 }
 
 .seo-box {
@@ -258,10 +234,6 @@ select:focus {
   background: var(--brand-strong);
   transform: translateY(-1px);
   box-shadow: 0 10px 24px var(--red-glow);
-}
-
-.auth-panel .btn {
-  width: 100%;
 }
 
 .btn.secondary {
@@ -344,6 +316,177 @@ select:focus {
   font-size: 0.9rem;
 }
 
+.muted a,
+.topbar-link {
+  color: var(--accent);
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.topbar-link {
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.topbar-link:hover {
+  text-decoration: underline;
+}
+
+.hint {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.btn.small {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  justify-self: start;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+  transform: none;
+  box-shadow: none;
+}
+
+input:disabled,
+textarea:disabled,
+select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Status of a post (also used for the role in the editors list) */
+.status-badge {
+  flex-shrink: 0;
+  align-self: center;
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.status-badge.review {
+  color: var(--accent);
+  border-color: var(--line-accent);
+}
+
+.status-badge.published {
+  color: #68eca0;
+  border-color: rgba(46, 204, 113, 0.35);
+}
+
+.post-item {
+  color: var(--ink);
+  font-family: inherit;
+}
+
+.post-item.active {
+  border-color: var(--accent);
+  background: rgba(201, 168, 76, 0.07);
+}
+
+.post-item-text {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.post-item-text strong {
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.post-item-text small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.lock-note {
+  margin: 0 0 0.9rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--line-accent);
+  border-radius: 10px;
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+
+.chief-tools {
+  margin-top: 1.2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 0.55rem;
+}
+
+.chief-tools h3 {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.editors-panel {
+  grid-area: editors;
+  padding: 1rem;
+}
+
+.editors-list {
+  display: grid;
+  gap: 0.55rem;
+  margin: 1rem 0;
+}
+
+.editor-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+}
+
+.editor-who {
+  display: grid;
+  gap: 0.1rem;
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.editor-who small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.editor-add-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+  align-items: end;
+}
+
 .toast {
   position: fixed;
   right: 1rem;
@@ -369,10 +512,479 @@ select:focus {
 
 @media (max-width: 1200px) {
   .admin-view {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "sidebar"
+      "editor"
+      "preview"
+      "editors";
   }
 
   .post-list {
     max-height: 36vh;
+  }
+}
+
+/* ===========================
+   SIGN IN
+   The same screen as the club website's admin (Leo-moratuwa/admin), so
+   officers meet one sign-in wherever they use their Mora Connect account.
+=========================== */
+.boot {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  font-size: 1.6rem;
+  color: var(--accent);
+}
+
+.login,
+.login-panel {
+  line-height: 1.6;
+}
+
+.login h1,
+.login h2,
+.login p,
+.login ul,
+.login-card h2,
+.login-card p {
+  margin: 0;
+}
+
+.login a,
+.login-card a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.login img,
+.login-card img {
+  display: block;
+  max-width: 100%;
+}
+
+.eyebrow {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* minmax(0, …) lets a column shrink below its content instead of overflowing on phones */
+.login {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.login-brand {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(2rem, 5vw, 4.5rem);
+  display: flex;
+  align-items: center;
+  background:
+    radial-gradient(60% 50% at 12% 10%, rgba(204, 0, 0, 0.30), transparent 70%),
+    radial-gradient(55% 55% at 95% 95%, rgba(201, 168, 76, 0.16), transparent 70%),
+    var(--bg);
+  border-right: 1px solid var(--line-accent);
+}
+
+/* fine dot grid, like the hero on the public site */
+.login-brand::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(180deg, #000, transparent 85%);
+}
+
+.login-kanji {
+  position: absolute;
+  left: -3rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: clamp(18rem, 34vw, 32rem);
+  font-weight: 800;
+  line-height: 1;
+  color: rgba(204, 0, 0, 0.09);
+  user-select: none;
+}
+
+.login-watermark {
+  position: absolute;
+  right: -14%;
+  bottom: -16%;
+  width: 72%;
+  opacity: 0.07;
+  pointer-events: none;
+}
+
+.login-brand-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 520px;
+}
+
+.login-brand h1 {
+  margin: 2.2rem 0 1.1rem;
+  font-size: clamp(2.2rem, 3.6vw, 3.4rem);
+  font-weight: 800;
+  line-height: 1.12;
+}
+
+.login-brand h1 span {
+  color: var(--accent);
+}
+
+.login-brand p {
+  color: #b9b2b2;
+  max-width: 440px;
+}
+
+.login-brand .login-points {
+  margin-top: 2.2rem;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.login-points li {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  font-size: 0.9rem;
+  color: #e4dede;
+}
+
+.login-points i {
+  width: 2.3rem;
+  height: 2.3rem;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-accent);
+  border-radius: 10px;
+  background: rgba(201, 168, 76, 0.08);
+  color: var(--accent);
+  font-size: 0.85rem;
+}
+
+.brand-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.brand-row img {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+}
+
+.brand-row b {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.login-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.25rem;
+  background: radial-gradient(70% 50% at 100% 0%, rgba(201, 168, 76, 0.09), transparent 70%), #080001;
+}
+
+/* The same card on its own (the "verify your email" step) */
+.login-panel.solo {
+  min-height: 100vh;
+}
+
+.login-card {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  max-width: 420px;
+  padding: 2.6rem 2.2rem 2rem;
+  background: rgba(20, 3, 4, 0.78);
+  border: 1px solid var(--line-accent);
+  border-radius: 20px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(18px);
+  animation: rise 0.5s ease both;
+}
+
+/* thin gold-to-red line across the top edge */
+.login-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--accent), var(--brand), transparent);
+}
+
+.login-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  margin-bottom: 1.3rem;
+  box-shadow: 0 0 0 1px var(--line-accent), 0 10px 30px rgba(201, 168, 76, 0.18);
+}
+
+.login-card h2 {
+  margin-top: 0.35rem;
+  font-size: 1.7rem;
+  font-weight: 700;
+}
+
+.login-card .login-sub {
+  margin-bottom: 1rem;
+  color: #b9b2b2;
+  font-size: 0.9rem;
+}
+
+/* Who may sign in */
+.login-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.65rem 0.8rem;
+  background: rgba(201, 168, 76, 0.08);
+  border: 1px solid var(--line-accent);
+  border-radius: 10px;
+  color: #e4dede;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.login-card .login-note {
+  margin-bottom: 1.4rem;
+}
+
+.login-note i {
+  margin-top: 0.15rem;
+  color: var(--accent);
+}
+
+.login-card .field {
+  display: block;
+  margin-bottom: 1.1rem;
+}
+
+.login-card .field > span {
+  display: block;
+  margin-bottom: 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #d6d0d0;
+}
+
+.input-wrap {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid #2a2022;
+  border-radius: var(--radius);
+  transition: 0.25s ease;
+}
+
+.input-wrap > i {
+  width: 2.8rem;
+  text-align: center;
+  color: #8a8282;
+  font-size: 0.9rem;
+  transition: 0.25s ease;
+}
+
+/* the box and its focus ring belong to .input-wrap, not to the field inside it */
+.input-wrap input,
+.input-wrap input:focus {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+  margin: 0;
+  padding: 0.85rem 0.9rem 0.85rem 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  font-size: 1rem;
+}
+
+.input-wrap input::placeholder {
+  color: #6b6464;
+}
+
+.input-wrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--gold-glow);
+}
+
+.input-wrap:focus-within > i {
+  color: var(--accent);
+}
+
+.icon-btn {
+  width: 2.8rem;
+  height: 2.6rem;
+  background: transparent;
+  border: 0;
+  color: #8a8282;
+  cursor: pointer;
+  border-radius: 10px;
+}
+
+.icon-btn:hover {
+  color: var(--accent);
+}
+
+.form-error {
+  padding: 0.7rem 0.9rem;
+  background: rgba(204, 0, 0, 0.12);
+  border: 1px solid rgba(204, 0, 0, 0.35);
+  border-radius: 10px;
+  color: #ff9a9a;
+  font-size: 0.82rem;
+}
+
+.login-card .form-error {
+  margin-bottom: 1rem;
+}
+
+.shake {
+  animation: shake 0.4s ease;
+}
+
+@keyframes shake {
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+.login-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  width: 100%;
+  margin-top: 0.4rem;
+  padding: 0.9rem 1.3rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: #fff;
+  background: linear-gradient(135deg, #e21212, var(--brand-strong));
+  box-shadow: 0 10px 30px rgba(204, 0, 0, 0.35);
+  cursor: pointer;
+  transition: 0.25s ease;
+}
+
+.login-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 36px rgba(204, 0, 0, 0.5);
+}
+
+.login-btn:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.login-btn.ghost {
+  margin-top: 0.7rem;
+  background: transparent;
+  border-color: #2a2022;
+  color: #ddd;
+  box-shadow: none;
+}
+
+.login-btn.ghost:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: #e8cc72;
+  box-shadow: none;
+}
+
+.back-link {
+  display: block;
+  width: 100%;
+  margin-top: 1.3rem;
+  padding: 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 0.82rem;
+  text-align: center;
+  color: #b9b2b2;
+  cursor: pointer;
+  transition: 0.25s ease;
+}
+
+.back-link:hover {
+  color: var(--accent);
+}
+
+.back-link i {
+  margin-right: 0.35rem;
+  font-size: 0.75rem;
+}
+
+.login-panel .login-foot {
+  margin-top: 1.5rem;
+  font-size: 0.72rem;
+  color: #8a8282;
+  text-align: center;
+}
+
+.login a:focus-visible,
+.login button:focus-visible,
+.login-card button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (max-width: 900px) {
+  .login {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .login-brand {
+    display: none;
+  }
+
+  .login-panel {
+    min-height: 100vh;
+    background:
+      radial-gradient(80% 45% at 50% 0%, rgba(204, 0, 0, 0.22), transparent 70%),
+      radial-gradient(70% 40% at 100% 100%, rgba(201, 168, 76, 0.1), transparent 70%),
+      #080001;
+  }
+}
+
+@media (max-width: 600px) {
+  .login-card {
+    padding: 2.2rem 1.4rem 1.6rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-card,
+  .shake {
+    animation: none;
   }
 }

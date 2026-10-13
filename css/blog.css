@@ -1156,6 +1156,39 @@ template { display: none !important; }
   font-size: 1rem;
   line-height: 1.7;
 }
+.modal-content .content-loading {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 3rem 0;
+}
+/* Articles written in the admin panel can also hold lists, links, pictures and tables */
+.modal-content ul,
+.modal-content ol {
+  color: var(--text-secondary);
+  line-height: 1.95;
+  margin: 0 0 1.1rem 1.4rem;
+  font-size: 0.96rem;
+}
+.modal-content ul { list-style: disc; }
+.modal-content p a,
+.modal-content li a { color: var(--gold); text-decoration: underline; }
+.modal-content img { height: auto; border-radius: var(--radius); margin: 0 auto; }
+.modal-content figure { margin: 1.6rem 0; }
+.modal-content figcaption {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-top: 0.5rem;
+}
+.modal-content table { width: 100%; border-collapse: collapse; margin-bottom: 1.1rem; }
+.modal-content th,
+.modal-content td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.7rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  text-align: left;
+}
 .content-tags {
   display: flex;
   gap: 0.5rem;
