@@ -43,7 +43,7 @@
           <p>The editors' desk for The Leo Chronicle. Write and publish the club's stories without touching any code.</p>
           <ul class="login-points">
             <li><i class="fas fa-pen-nib"></i> Write a story and save it as a draft</li>
-            <li><i class="fas fa-user-check"></i> A chief editor reviews and publishes it</li>
+            <li><i class="fas fa-user-check"></i> An officer reviews and publishes it</li>
             <li><i class="fas fa-image"></i> Cover photos are resized for you</li>
           </ul>
         </div>
@@ -56,7 +56,7 @@
           <p class="eyebrow">Blog Admin</p>
           <h2>Welcome back</h2>
           <p class="login-sub">Sign in with your Mora Connect account.</p>
-          <p class="login-note"><i class="fas fa-shield-halved"></i><span>Only blog editors can sign in.</span></p>
+          <p class="login-note"><i class="fas fa-shield-halved"></i><span>Only the Secretary, President, Super Admin and editors they add can sign in.</span></p>
 
           <label class="field">
             <span>Email</span>
@@ -85,19 +85,6 @@
         </form>
         <p class="login-foot">&copy; 2026 Leo Club of Moratuwa &middot; Authorised editors only</p>
       </section>
-    </div>
-
-    <!-- Signed in, but the email is not verified yet: the same card, one job -->
-    <div class="login-panel solo" id="accessView" hidden>
-      <div class="login-card">
-        <img class="login-logo" src="/images/logos/logo-192.png" alt="Leo Club of Moratuwa" />
-        <p class="eyebrow">Blog Admin</p>
-        <h2 id="accessTitle">Verify your email</h2>
-        <p class="login-sub" id="accessMessage"></p>
-        <button type="button" class="login-btn" id="verifyBtn"><i class="fas fa-paper-plane"></i><span>Send verification email</span></button>
-        <button type="button" class="login-btn ghost" id="recheckBtn"><i class="fas fa-rotate"></i><span>Check again</span></button>
-        <button type="button" class="back-link" id="accessSignOutBtn"><i class="fas fa-arrow-left"></i> Sign in with another account</button>
-      </div>
     </div>
 
     <!-- ===== THE PANEL ===== -->
@@ -135,8 +122,8 @@
 
           <div id="postList" class="post-list"></div>
 
-          <div id="chiefTools" class="chief-tools" hidden>
-            <h3>Chief editor</h3>
+          <div id="officerTools" class="chief-tools" hidden>
+            <h3>Officers</h3>
             <button type="button" id="editorsBtn" class="btn secondary">Manage editors</button>
             <button type="button" id="importBtn" class="btn secondary">Import site articles</button>
             <button type="button" id="rebuildBtn" class="btn secondary">Refresh public list</button>
@@ -239,8 +226,9 @@
         <section id="editorsPanel" class="panel editors-panel" hidden>
           <h2>Blog editors</h2>
           <p class="muted">
-            Editors sign in with their Mora Connect account. They must be active members with a verified email.
-            An editor writes drafts and sends them for review; a chief editor publishes and manages this list.
+            The Secretary, President and Super Admin can always sign in and publish; they are not on this list.
+            Here you can let other active Mora Connect members in as editors. An editor writes drafts and sends
+            them for review, but cannot publish.
           </p>
           <div id="editorsList" class="editors-list"></div>
           <form id="editorForm" class="editor-add-form">
@@ -249,12 +237,6 @@
             </label>
             <label>Name
               <input id="editorName" maxlength="100" required />
-            </label>
-            <label>Role
-              <select id="editorRole">
-                <option value="editor">Editor</option>
-                <option value="chiefEditor">Chief editor</option>
-              </select>
             </label>
             <button type="submit" class="btn">Add editor</button>
           </form>

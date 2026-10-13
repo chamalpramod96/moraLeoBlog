@@ -8,50 +8,41 @@
     // ═════════════════════════════════════════════════════════════════════════
     // BLOG (moraLeoBlog) — edited from the blog's /admin page
     // ═════════════════════════════════════════════════════════════════════════
-    // Blog editors live in blogEditors/{email}, a list of their own: being on it
-    // gives nothing in the portal, and a portal role gives nothing on the blog.
-    // An editor must be an ACTIVE MEMBER with a VERIFIED email — sign-up is
-    // open, so without that anyone could register an editor's address first,
-    // and a member who leaves the club loses the blog too.
-    // Roles: 'chiefEditor' (publishes, deletes, manages this list) and 'editor'
-    // (writes their own drafts and sends them for review).
+    // The blog is run by the portal's admins — Secretary, President and Super
+    // Admin (isAdmin() above) — the same people who may use the club website's
+    // admin. They write, publish and delete.
+    // They can also list other ACTIVE MEMBERS in blogEditors/{email} as
+    // editors: an editor writes their own drafts and sends them for review,
+    // but can't publish. A member who leaves the club loses the blog too.
 
     function blogEditorDoc() {
       return /databases/$(database)/documents/blogEditors/$(request.auth.token.email);
     }
 
+    // May open the blog's admin page at all: an admin, or a listed editor
     function isBlogEditor() {
-      return isActiveMember() &&
-        request.auth.token.email_verified == true &&
-        exists(blogEditorDoc());
-    }
-
-    function isBlogChief() {
-      return isBlogEditor() && get(blogEditorDoc()).data.role == 'chiefEditor';
+      return isAdmin() || (isActiveMember() && exists(blogEditorDoc()));
     }
 
     function isBlogText(v, min, max) {
       return v is string && v.size() >= min && v.size() <= max;
     }
 
-    // ── Blog editors ─────────────────────────────────────────────────────────
+    // ── Blog editors (members the admins have let in) ────────────────────────
     match /blogEditors/{email} {
-      // Anyone signed in may read their OWN entry (the admin page checks it and
-      // tells them what is missing); only chief editors see the whole list
+      // Anyone signed in may read their OWN entry (the admin page checks it);
+      // only admins see the whole list
       allow read: if (isAuthenticated() && request.auth.token.email == email) ||
-        isBlogChief();
+        isAdmin();
 
       // Doc ids are lowercase emails (Firebase Auth lowercases them too, so a
-      // mixed-case id never matches). A chief editor can't demote themselves,
-      // so the blog always keeps one.
-      allow create, update: if isBlogChief() &&
+      // mixed-case id never matches)
+      allow create, update: if isAdmin() &&
         email == email.lower() &&
-        request.resource.data.keys().hasOnly(['role', 'name']) &&
-        request.resource.data.role in ['chiefEditor', 'editor'] &&
-        isBlogText(request.resource.data.name, 1, 100) &&
-        (request.auth.token.email != email || request.resource.data.role == 'chiefEditor');
+        request.resource.data.keys().hasOnly(['name']) &&
+        isBlogText(request.resource.data.name, 1, 100);
 
-      allow delete: if isBlogChief() && request.auth.token.email != email;
+      allow delete: if isAdmin();
     }
 
     // ── Blog posts ───────────────────────────────────────────────────────────
@@ -88,16 +79,16 @@
 
     match /blogPosts/{postId} {
       // Visitors open ONE published post at a time (the list they see is
-      // blogIndex/current below); only editors can list, drafts included
+      // blogIndex/current below); only admins and editors can list, drafts included
       allow get:  if resource.data.status == 'published' || isBlogEditor();
       allow list: if isBlogEditor();
 
       // An editor starts drafts under their own account; publishing and
-      // featuring are the chief editor's decisions
+      // featuring are the admins' decisions
       allow create: if isBlogEditor() &&
         isValidBlogPost(request.resource.data) &&
         request.resource.data.createdByUid == request.auth.uid &&
-        (isBlogChief() ||
+        (isAdmin() ||
          (request.resource.data.status in ['draft', 'review'] &&
           request.resource.data.featured == false));
 
@@ -106,13 +97,13 @@
         isValidBlogPost(request.resource.data) &&
         request.resource.data.createdByUid == resource.data.createdByUid &&
         request.resource.data.createdAt == resource.data.createdAt &&
-        (isBlogChief() ||
+        (isAdmin() ||
          (resource.data.createdByUid == request.auth.uid &&
           resource.data.status in ['draft', 'review'] &&
           request.resource.data.status in ['draft', 'review'] &&
           request.resource.data.featured == resource.data.featured));
 
-      allow delete: if isBlogChief() ||
+      allow delete: if isAdmin() ||
         (isBlogEditor() &&
          resource.data.createdByUid == request.auth.uid &&
          resource.data.status in ['draft', 'review']);
@@ -121,11 +112,11 @@
     // ── Published list ──────────────────────────────────────────────────────
     // One document (blogIndex/current) with the title, excerpt, date… of every
     // published post — no article text. The blog reads it once per visit, so a
-    // visit costs one read however many posts there are. Chief editors' admin
-    // page rewrites it after every publish, unpublish or delete.
+    // visit costs one read however many posts there are. The admin page
+    // rewrites it after every publish, unpublish or delete.
     match /blogIndex/{docId} {
       allow read:  if true;
-      allow write: if isBlogChief() &&
+      allow write: if isAdmin() &&
         docId == 'current' &&
         request.resource.data.keys().hasOnly(['posts', 'updatedAt']) &&
         request.resource.data.posts is list &&

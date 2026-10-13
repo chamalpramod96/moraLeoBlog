@@ -55,19 +55,6 @@
     return state.auth.onAuthStateChanged(cb);
   }
 
-  function sendVerificationEmail() {
-    return state.auth.currentUser.sendEmailVerification();
-  }
-
-  /** Fetches the account again, so a just-verified email or a changed role is seen. */
-  async function refreshUser() {
-    const user = state.auth.currentUser;
-    if (!user) return null;
-    await user.reload();
-    await user.getIdToken(true);
-    return state.auth.currentUser;
-  }
-
   async function readOwnDoc(collection, email) {
     try {
       const doc = await state.db.collection(collection).doc(email).get();
@@ -79,24 +66,26 @@
   }
 
   /**
-   * What the signed-in account is allowed, from its own two records: its entry
-   * in the blog editors list and its Mora Connect member record.
+   * What is known about the signed-in account, from its own two records: its
+   * Mora Connect member record (role, active or not) and, if it has one, its
+   * entry in the blog's editors list.
    */
   async function getAccess(config) {
     const user = state.auth.currentUser;
     if (!user) return null;
     const email = String(user.email || "").toLowerCase();
-    const [editor, member] = await Promise.all([
-      readOwnDoc(config.collections.editors, email),
+    const [member, editor] = await Promise.all([
       readOwnDoc(config.collections.members, email),
+      readOwnDoc(config.collections.editors, email),
     ]);
     return {
       uid: user.uid,
       email,
-      verified: !!user.emailVerified,
+      isMember: !!member,
       activeMember: !!(member && member.isActive === true),
-      role: editor ? editor.role : null,
-      name: (editor && editor.name) || (member && member.fullName) || email,
+      memberRole: member ? member.role || "" : "",
+      listedEditor: !!editor,
+      name: (member && member.fullName) || (editor && editor.name) || email,
     };
   }
 
@@ -152,7 +141,7 @@
     return path;
   }
 
-  /** Removes an uploaded image. Only chief editors may; a refusal is not an error here. */
+  /** Removes an uploaded image. Only officers may; a refusal is not an error here. */
   async function deleteImage(path) {
     try {
       await state.storage.ref().child(path).delete();
@@ -161,7 +150,7 @@
     }
   }
 
-  // ── Editors list (chief editors) ───────────────────────────────────────────
+  // ── Editors list (other members the officers let in) ───────────────────────
 
   function editorsCollection(config) {
     return state.db.collection(config.collections.editors);
@@ -170,12 +159,12 @@
   async function listEditors(config) {
     const snap = await editorsCollection(config).get();
     return snap.docs
-      .map((d) => ({ email: d.id, role: d.data().role, name: d.data().name || "" }))
+      .map((d) => ({ email: d.id, name: d.data().name || "" }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  async function saveEditor(config, email, editor) {
-    await editorsCollection(config).doc(email).set({ role: editor.role, name: editor.name });
+  async function saveEditor(config, email, name) {
+    await editorsCollection(config).doc(email).set({ name });
   }
 
   async function removeEditor(config, email) {
@@ -187,8 +176,6 @@
     authSignIn,
     authSignOut,
     onAuthChange,
-    sendVerificationEmail,
-    refreshUser,
     getAccess,
     listPosts,
     newPostId,

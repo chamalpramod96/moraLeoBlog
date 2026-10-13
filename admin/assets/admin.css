@@ -702,11 +702,6 @@ select:disabled {
   background: radial-gradient(70% 50% at 100% 0%, rgba(201, 168, 76, 0.09), transparent 70%), #080001;
 }
 
-/* The same card on its own (the "verify your email" step) */
-.login-panel.solo {
-  min-height: 100vh;
-}
-
 .login-card {
   position: relative;
   overflow: hidden;

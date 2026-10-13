@@ -9,7 +9,6 @@
   const els = {
     bootView: $("bootView"),
     loginView: $("loginView"),
-    accessView: $("accessView"),
     appView: $("appView"),
     loginForm: $("loginForm"),
     loginEmail: $("loginEmail"),
@@ -19,11 +18,6 @@
     loginBtn: $("loginBtn"),
     logoutBtn: $("logoutBtn"),
     authBadge: $("authBadge"),
-
-    accessMessage: $("accessMessage"),
-    verifyBtn: $("verifyBtn"),
-    recheckBtn: $("recheckBtn"),
-    accessSignOutBtn: $("accessSignOutBtn"),
 
     statPosts: $("statPosts"),
     statDrafts: $("statDrafts"),
@@ -35,7 +29,7 @@
     postSearch: $("postSearch"),
     statusFilter: $("statusFilter"),
 
-    chiefTools: $("chiefTools"),
+    officerTools: $("officerTools"),
     editorsBtn: $("editorsBtn"),
     importBtn: $("importBtn"),
     rebuildBtn: $("rebuildBtn"),
@@ -77,7 +71,6 @@
     editorForm: $("editorForm"),
     editorEmail: $("editorEmail"),
     editorName: $("editorName"),
-    editorRole: $("editorRole"),
 
     toast: $("toast"),
   };
@@ -85,7 +78,7 @@
   const appState = {
     posts: [],
     editor: null,        // the rich-text editor
-    access: null,        // the signed-in editor: { uid, email, role, name, … }
+    access: null,        // who is signed in: { uid, email, name, memberRole, blogRole: "officer" | "editor" }
     loadedPost: null,    // the post in the form; null while writing a new one
     coverPath: "",       // the cover the form holds (a Storage path or a site file)
     localPreviewImageUrl: null,
@@ -100,7 +93,11 @@
   // The same categories as the tabs on the blog
   const CATEGORIES = ["news", "events", "service", "leadership", "education", "environment", "health", "technology", "stories", "achievements"];
   const STATUS_LABELS = { draft: "Draft", review: "Waiting for review", published: "Published" };
-  const ROLE_LABELS = { editor: "Editor", chiefEditor: "Chief editor" };
+  // The Mora Connect roles that run the blog — the same three that may use the club website's admin.
+  // Kept in step with isAdmin() in the portal's rules.
+  const OFFICER_ROLES = ["secretary", "president", "superAdmin"];
+  const ROLE_LABELS = { secretary: "Secretary", president: "President", superAdmin: "Super Admin", member: "Member" };
+  const OFFICERS_TEXT = "the Secretary, President and Super Admin";
 
   // Kept in step with the rules (portal-rules/firestore-blog.rules), so a post
   // that is too long is explained here instead of being refused there
@@ -151,12 +148,13 @@
     return !!(fb && fb.apiKey && fb.projectId && fb.authDomain && fb.storageBucket && fb.appId);
   }
 
-  const isChief = () => !!appState.access && appState.access.role === "chiefEditor";
+  /** Secretary, President or Super Admin: may publish, delete and manage the editors list. */
+  const isOfficer = () => !!appState.access && appState.access.blogRole === "officer";
 
-  /** New posts: any editor. Existing ones: a chief editor, or the writer until it is published. */
+  /** New posts: anyone signed in. Existing ones: an officer, or the writer until it is published. */
   function canEdit(post) {
     if (!appState.access) return false;
-    if (isChief() || !post) return true;
+    if (isOfficer() || !post) return true;
     return post.createdByUid === appState.access.uid && post.status !== "published";
   }
 
@@ -168,11 +166,10 @@
 
   // ── Views ──────────────────────────────────────────────────────────────────
 
-  /** One of: "boot" (checking who is signed in), "login", "access" (verify your email), "admin". */
+  /** One of: "boot" (checking who is signed in), "login", "admin". */
   function showView(name) {
     els.bootView.hidden = name !== "boot";
     els.loginView.hidden = name !== "login";
-    els.accessView.hidden = name !== "access";
     els.appView.hidden = name !== "admin";
     setLoginBusy(false);
   }
@@ -197,32 +194,48 @@
     await svc.authSignOut();
   }
 
+  /**
+   * Who gets in: an active Mora Connect member who is Secretary, President or
+   * Super Admin — or one those officers put on the blog's editors list.
+   * (The rules in Mora Connect enforce the same thing; this is what the screen says.)
+   */
   async function enterAdmin() {
     const access = await svc.getAccess(cfg);
     if (!access) return;
-    appState.access = access;
 
-    if (!ROLE_LABELS[access.role]) {
-      await refuse(`Access denied: only blog editors can sign in here. Ask a chief editor to add ${access.email}.`);
+    if (!access.isMember) {
+      await refuse("Access denied: this account is not registered as a member in Mora Connect.");
       return;
     }
     if (!access.activeMember) {
       await refuse("Access denied: your Mora Connect account is not an active member.");
       return;
     }
-    if (!access.verified) {
-      // The one case that stays signed in: the verification email is sent from this account
-      els.accessMessage.textContent =
-        `Editors need a verified email. Send a verification email to ${access.email}, open the link in it, then press “Check again”.`;
-      showView("access");
+    const officer = OFFICER_ROLES.includes(access.memberRole);
+    if (!officer && !access.listedEditor) {
+      const role = ROLE_LABELS[access.memberRole] || access.memberRole || "not set";
+      await refuse(`Access denied: only ${OFFICERS_TEXT} can sign in here. Your Mora Connect role is ${role}.`);
       return;
     }
 
-    els.authBadge.textContent = `${access.name} · ${ROLE_LABELS[access.role]}`;
-    els.chiefTools.hidden = !isChief();
+    access.blogRole = officer ? "officer" : "editor";
+    appState.access = access;
+
+    try {
+      await refreshPosts();
+    } catch (err) {
+      if (err && err.code === "permission-denied") {
+        // The account is fine; the blog's part of the Mora Connect rules is not deployed yet
+        await refuse("Your sign-in worked, but the blog is not switched on in Mora Connect yet (its security rules have not been deployed).");
+        return;
+      }
+      throw err;
+    }
+
+    els.authBadge.textContent = `${access.name} · ${officer ? ROLE_LABELS[access.memberRole] : "Editor"}`;
+    els.officerTools.hidden = !officer;
     els.editorsPanel.hidden = true;
     showView("admin");
-    await refreshPosts();
     resetToNewPost();
   }
 
@@ -361,7 +374,7 @@
     const post = appState.loadedPost;
     const status = post ? post.status : "draft";
     const editable = canEdit(post);
-    const chief = isChief();
+    const officer = isOfficer();
 
     els.statusBadge.textContent = post ? STATUS_LABELS[status] : "New";
     els.statusBadge.className = `status-badge ${post ? status : "draft"}`;
@@ -369,23 +382,23 @@
     els.lockNote.hidden = editable;
     if (!editable) {
       els.lockNote.textContent = status === "published"
-        ? "This post is published. Only a chief editor can change it."
+        ? "This post is published. Only the Secretary, President or Super Admin can change it."
         : "This post belongs to another editor. You can read it, but not change it.";
     }
 
     Array.from(els.postForm.querySelectorAll("input, textarea, select")).forEach((field) => {
       field.disabled = !editable;
     });
-    // Featuring a post is the chief editor's decision
-    els.postFeatured.disabled = !editable || !chief;
+    // Featuring a post is the officers' decision
+    els.postFeatured.disabled = !editable || !officer;
     if (appState.editor) {
       if (editable) appState.editor.disableReadOnlyMode("blog-admin");
       else appState.editor.enableReadOnlyMode("blog-admin");
     }
 
     els.saveBtn.hidden = !editable;
-    els.reviewBtn.hidden = !(editable && !chief && status === "draft");
-    els.publishBtn.hidden = !(chief && status !== "published");
+    els.reviewBtn.hidden = !(editable && !officer && status === "draft");
+    els.publishBtn.hidden = !(officer && status !== "published");
     els.unpublishBtn.hidden = !(editable && post && status !== "draft");
     els.unpublishBtn.textContent = status === "published" ? "Unpublish" : "Back to draft";
     els.deleteBtn.hidden = !(editable && post);
@@ -550,8 +563,8 @@
     }
 
     const status = targetStatus || (post ? post.status : "draft");
-    if (status === "published" && !isChief()) {
-      toast("Only a chief editor can publish. Send it for review instead.", true);
+    if (status === "published" && !isOfficer()) {
+      toast("Only the Secretary, President or Super Admin can publish. Send it for review instead.", true);
       return;
     }
     // A published post always has a date; it is set once and then left alone
@@ -580,7 +593,7 @@
         author: form.author.slice(0, LIMITS.author),
         readTime: form.readTime.slice(0, LIMITS.readTime),
         status,
-        featured: isChief() ? form.featured : !!(post && post.featured),
+        featured: isOfficer() ? form.featured : !!(post && post.featured),
         coverImage,
         contentHtml: form.contentHtml,
         seo: form.seo,
@@ -592,12 +605,12 @@
         updatedByUid: appState.access.uid,
       });
 
-      if (previousCover && previousCover !== coverImage && previousCover.startsWith(`${cfg.storage.postsPath}/`) && isChief()) {
+      if (previousCover && previousCover !== coverImage && previousCover.startsWith(`${cfg.storage.postsPath}/`) && isOfficer()) {
         await svc.deleteImage(previousCover);
       }
 
       await refreshPosts();
-      const listOk = isChief() && (wasPublished || status === "published") ? await publishList() : true;
+      const listOk = isOfficer() && (wasPublished || status === "published") ? await publishList() : true;
       writeForm(appState.posts.find((p) => p.id === id) || null);
 
       if (listOk) {
@@ -623,11 +636,11 @@
     setBusy(true);
     try {
       await svc.deletePost(cfg, post.id);
-      if (isChief() && String(post.coverImage || "").startsWith(`${cfg.storage.postsPath}/`)) {
+      if (isOfficer() && String(post.coverImage || "").startsWith(`${cfg.storage.postsPath}/`)) {
         await svc.deleteImage(post.coverImage);
       }
       await refreshPosts();
-      const listOk = isChief() && post.status === "published" ? await publishList() : true;
+      const listOk = isOfficer() && post.status === "published" ? await publishList() : true;
       resetToNewPost();
       if (listOk) toast("Post deleted.");
     } catch (err) {
@@ -650,7 +663,7 @@
     }
   }
 
-  // ── Import of the site's hand-written articles (chief editors) ─────────────
+  // ── Import of the site's hand-written articles (officers) ──────────────────
 
   /** Reads the articles in js/articles/*.js into the same shape as a post. */
   function readSiteArticles() {
@@ -697,7 +710,7 @@
   }
 
   async function importSiteArticles() {
-    if (appState.busy || !isChief()) return;
+    if (appState.busy || !isOfficer()) return;
 
     setBusy(true);
     try {
@@ -738,41 +751,31 @@
     }
   }
 
-  // ── Editors list (chief editors) ───────────────────────────────────────────
+  // ── Editors list (officers) ────────────────────────────────────────────────
+  // Other active members the officers let in to write drafts. The officers
+  // themselves are not on it: their Mora Connect role is what lets them in.
 
   async function renderEditors() {
     const editors = await svc.listEditors(cfg);
-    els.editorsList.innerHTML = editors.map((editor) => {
-      const self = editor.email === appState.access.email;
-      const other = editor.role === "chiefEditor" ? "editor" : "chiefEditor";
-      return `
-        <div class="editor-row">
-          <span class="editor-who">
-            <strong>${esc(editor.name)}</strong>
-            <small>${esc(editor.email)}</small>
-          </span>
-          <span class="status-badge ${editor.role === "chiefEditor" ? "published" : "draft"}">${esc(ROLE_LABELS[editor.role] || editor.role)}</span>
-          ${self ? '<span class="muted">you</span>' : `
-            <button type="button" class="btn secondary small" data-act="role" data-email="${esc(editor.email)}" data-name="${esc(editor.name)}" data-role="${other}">Make ${ROLE_LABELS[other].toLowerCase()}</button>
-            <button type="button" class="btn danger small" data-act="remove" data-email="${esc(editor.email)}">Remove</button>`}
-        </div>
-      `;
-    }).join("") || '<p class="muted">No editors yet.</p>';
+    els.editorsList.innerHTML = editors.map((editor) => `
+      <div class="editor-row">
+        <span class="editor-who">
+          <strong>${esc(editor.name)}</strong>
+          <small>${esc(editor.email)}</small>
+        </span>
+        <button type="button" class="btn danger small" data-email="${esc(editor.email)}">Remove</button>
+      </div>
+    `).join("") || '<p class="muted">No editors added yet.</p>';
   }
 
   async function onEditorsListClick(event) {
-    const btn = event.target.closest("button[data-act]");
+    const btn = event.target.closest("button[data-email]");
     if (!btn) return;
     const email = btn.getAttribute("data-email");
+    if (!window.confirm(`Remove ${email} from the blog editors?`)) return;
     try {
-      if (btn.getAttribute("data-act") === "remove") {
-        if (!window.confirm(`Remove ${email} from the blog editors?`)) return;
-        await svc.removeEditor(cfg, email);
-        toast("Editor removed.");
-      } else {
-        await svc.saveEditor(cfg, email, { role: btn.getAttribute("data-role"), name: btn.getAttribute("data-name") });
-        toast("Role changed.");
-      }
+      await svc.removeEditor(cfg, email);
+      toast("Editor removed.");
       await renderEditors();
     } catch (err) {
       toast(describeError(err), true);
@@ -784,12 +787,8 @@
     const email = els.editorEmail.value.trim().toLowerCase();
     const name = els.editorName.value.trim();
     if (!email || !name) return;
-    if (email === appState.access.email) {
-      toast("You can't change your own entry.", true);
-      return;
-    }
     try {
-      await svc.saveEditor(cfg, email, { role: els.editorRole.value, name });
+      await svc.saveEditor(cfg, email, name);
       els.editorForm.reset();
       await renderEditors();
       toast("Editor added. They can sign in with their Mora Connect account.");
@@ -860,25 +859,6 @@
     });
 
     els.logoutBtn.addEventListener("click", () => svc.authSignOut());
-    els.accessSignOutBtn.addEventListener("click", () => svc.authSignOut());
-
-    els.verifyBtn.addEventListener("click", async () => {
-      try {
-        await svc.sendVerificationEmail();
-        toast(`Verification email sent to ${appState.access.email}. Check your inbox and spam folder.`);
-      } catch (err) {
-        toast(describeError(err), true);
-      }
-    });
-
-    els.recheckBtn.addEventListener("click", async () => {
-      try {
-        await svc.refreshUser();
-        await enterAdmin();
-      } catch (err) {
-        toast(describeError(err), true);
-      }
-    });
 
     els.newPostBtn.addEventListener("click", () => {
       resetToNewPost();
