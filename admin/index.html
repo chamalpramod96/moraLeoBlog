@@ -1,12 +1,21 @@
 <!doctype html>
+<!--
+  admin/index.html — Leo Club of Moratuwa · Blog admin
+  ──────────────────────────────────────────────────────────────────────────
+  One page, two views: the sign-in screen and the panel. The panel is laid out
+  like the club website's admin: a list of posts with Edit / Delete on each
+  row, and an add / edit form with a live preview beside it.
+  assets/admin-app.js switches between them and fills the lists.
+
+  Every address in this file starts with / so the page works whether it is
+  opened as /admin or /admin/.
+-->
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Leo Club of Moratuwa Blog Admin</title>
   <meta name="robots" content="noindex,nofollow" />
-  <!-- Every address in this file starts with / so the page works whether it
-       is opened as /admin or /admin/. -->
   <!-- Only this site's own scripts and the three libraries below may run here.
        The 127.0.0.1 addresses are the local Firebase emulators (testing only). -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://cdn.ckeditor.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https: http://127.0.0.1:9198; connect-src 'self' https://*.googleapis.com http://127.0.0.1:9099 http://127.0.0.1:8181 http://127.0.0.1:9198; object-src 'none'; base-uri 'self'; form-action 'self'" />
@@ -23,230 +32,306 @@
   <script src="/js/shared/safe-html.js"></script>
 </head>
 <body>
-  <div id="appRoot" class="app-root">
-    <!-- Shown for a moment while we check whether someone is already signed in -->
-    <div class="boot" id="bootView"><i class="fas fa-circle-notch fa-spin"></i></div>
 
-    <!-- ===== SIGN IN — the same screen as the club website's admin ===== -->
-    <div class="login" id="loginView" hidden>
+  <!-- Shown for a moment while we check whether someone is already signed in -->
+  <div class="boot" id="bootView"><i class="fas fa-circle-notch fa-spin"></i></div>
 
-      <!-- Left: brand panel (decorative — hidden on phones) -->
-      <section class="login-brand" aria-hidden="true">
-        <div class="login-kanji">武</div>
-        <img class="login-watermark" src="/images/logos/logo-512.png" alt="" loading="lazy" />
-        <div class="login-brand-inner">
-          <div class="brand-row">
-            <img src="/images/logos/logo-192.png" alt="" />
-            <span>Leo Club <b>of Moratuwa</b></span>
-          </div>
-          <h1>Bold in <span>Service.</span><br>United in <span>Purpose.</span></h1>
-          <p>The editors' desk for The Leo Chronicle. Write and publish the club's stories without touching any code.</p>
-          <ul class="login-points">
-            <li><i class="fas fa-pen-nib"></i> Write a story and save it as a draft</li>
-            <li><i class="fas fa-user-check"></i> An officer reviews and publishes it</li>
-            <li><i class="fas fa-image"></i> Cover photos are resized for you</li>
-          </ul>
+  <!-- ===== SIGN IN — the same screen as the club website's admin ===== -->
+  <div class="login" id="loginView" hidden>
+
+    <!-- Left: brand panel (decorative — hidden on phones) -->
+    <section class="login-brand" aria-hidden="true">
+      <div class="login-kanji">武</div>
+      <img class="login-watermark" src="/images/logos/logo-512.png" alt="" loading="lazy" />
+      <div class="login-brand-inner">
+        <div class="brand-row">
+          <img src="/images/logos/logo-192.png" alt="" />
+          <span>Leo Club <b>of Moratuwa</b></span>
         </div>
-      </section>
+        <h1>Bold in <span>Service.</span><br>United in <span>Purpose.</span></h1>
+        <p>The editors' desk for The Leo Chronicle. Write and publish the club's stories without touching any code.</p>
+        <ul class="login-points">
+          <li><i class="fas fa-pen-nib"></i> Write a story and save it as a draft</li>
+          <li><i class="fas fa-user-check"></i> An officer reviews and publishes it</li>
+          <li><i class="fas fa-image"></i> Cover photos are resized for you</li>
+        </ul>
+      </div>
+    </section>
 
-      <!-- Right: the form -->
-      <section class="login-panel">
-        <form class="login-card" id="loginForm" novalidate>
-          <img class="login-logo" src="/images/logos/logo-192.png" alt="Leo Club of Moratuwa" />
-          <p class="eyebrow">Blog Admin</p>
-          <h2>Welcome back</h2>
-          <p class="login-sub">Sign in with your Mora Connect account.</p>
-          <p class="login-note"><i class="fas fa-shield-halved"></i><span>Only the Secretary, President, Super Admin and editors they add can sign in.</span></p>
+    <!-- Right: the form -->
+    <section class="login-panel">
+      <form class="login-card" id="loginForm" novalidate>
+        <img class="login-logo" src="/images/logos/logo-192.png" alt="Leo Club of Moratuwa" />
+        <p class="eyebrow">Blog Admin</p>
+        <h2>Welcome back</h2>
+        <p class="login-sub">Sign in with your Mora Connect account.</p>
+        <p class="login-note"><i class="fas fa-shield-halved"></i><span>Only the Secretary, President, Super Admin and editors they add can sign in.</span></p>
 
-          <label class="field">
-            <span>Email</span>
-            <div class="input-wrap">
-              <i class="fas fa-envelope"></i>
-              <input type="email" id="loginEmail" autocomplete="username" placeholder="you@example.com" required />
-            </div>
-          </label>
+        <label class="field">
+          <span>Email</span>
+          <div class="input-wrap">
+            <i class="fas fa-envelope"></i>
+            <input type="email" id="loginEmail" autocomplete="username" placeholder="you@example.com" required />
+          </div>
+        </label>
 
-          <label class="field">
-            <span>Password</span>
-            <div class="input-wrap">
-              <i class="fas fa-lock"></i>
-              <input type="password" id="loginPassword" autocomplete="current-password" placeholder="Your password" required />
-              <button type="button" class="icon-btn" id="togglePassword" aria-label="Show password"><i class="fas fa-eye"></i></button>
-            </div>
-          </label>
+        <label class="field">
+          <span>Password</span>
+          <div class="input-wrap">
+            <i class="fas fa-lock"></i>
+            <input type="password" id="loginPassword" autocomplete="current-password" placeholder="Your password" required />
+            <button type="button" class="icon-btn" id="togglePassword" aria-label="Show password"><i class="fas fa-eye"></i></button>
+          </div>
+        </label>
 
-          <p class="form-error" id="loginError" role="alert" hidden></p>
+        <p class="form-error" id="loginError" role="alert" hidden></p>
 
-          <button type="submit" class="login-btn" id="loginBtn">
-            <span>Sign in</span><i class="fas fa-arrow-right"></i>
-          </button>
+        <button type="submit" class="btn btn-primary btn-block" id="loginBtn">
+          <span>Sign in</span><i class="fas fa-arrow-right"></i>
+        </button>
 
-          <a class="back-link" href="/"><i class="fas fa-arrow-left"></i> Back to the blog</a>
-        </form>
-        <p class="login-foot">&copy; 2026 Leo Club of Moratuwa &middot; Authorised editors only</p>
-      </section>
-    </div>
+        <a class="back-link" href="/"><i class="fas fa-arrow-left"></i> Back to the blog</a>
+      </form>
+      <p class="login-foot">&copy; 2026 Leo Club of Moratuwa &middot; Authorised editors only</p>
+    </section>
+  </div>
 
-    <!-- ===== THE PANEL ===== -->
-    <div id="appView" hidden>
+  <!-- ===== THE PANEL ===== -->
+  <div class="app" id="appView" hidden>
+
     <header class="topbar">
-      <div class="brand">Leo Club of Moratuwa Blog</div>
-      <div class="topbar-actions">
-        <a class="topbar-link" href="/" target="_blank" rel="noopener">View blog</a>
-        <span id="authBadge" class="auth-badge"></span>
-        <button id="logoutBtn" class="btn secondary">Sign out</button>
+      <a class="brand-row" href="/">
+        <img src="/images/logos/logo-192.png" alt="" />
+        <span>Leo Club <b>of Moratuwa</b></span>
+        <em>Blog Admin</em>
+      </a>
+      <div class="topbar-right">
+        <a class="btn btn-ghost btn-sm" href="/" target="_blank" rel="noopener"><i class="fas fa-arrow-up-right-from-square"></i><span>View blog</span></a>
+        <span class="user-chip"><i class="fas fa-user-shield"></i><span id="userName"></span><em class="role-badge" id="userRole"></em></span>
+        <button type="button" class="btn btn-ghost btn-sm" id="logoutBtn"><i class="fas fa-right-from-bracket"></i><span>Sign out</span></button>
       </div>
     </header>
 
-    <main class="main-layout">
-      <section id="adminView" class="admin-view">
-        <aside class="panel sidebar">
-          <h2>Dashboard</h2>
-          <div class="stats">
-            <div class="stat-card"><strong id="statPosts">0</strong><span>Total Posts</span></div>
-            <div class="stat-card"><strong id="statDrafts">0</strong><span>Drafts</span></div>
-            <div class="stat-card"><strong id="statReview">0</strong><span>Waiting for review</span></div>
-            <div class="stat-card"><strong id="statPublished">0</strong><span>Published</span></div>
-          </div>
+    <div class="layout">
 
-          <div class="toolbar">
-            <button type="button" id="newPostBtn" class="btn">+ Create Post</button>
-            <input id="postSearch" type="search" placeholder="Search posts..." />
-            <select id="statusFilter">
-              <option value="all">All Status</option>
-              <option value="draft">Draft</option>
-              <option value="review">Waiting for review</option>
-              <option value="published">Published</option>
-            </select>
-          </div>
+      <nav class="sidenav" aria-label="Sections">
+        <button type="button" class="nav-item" data-section="posts"><i class="fas fa-newspaper"></i><span>Posts</span></button>
+        <button type="button" class="nav-item" data-section="editors" id="navEditors" hidden><i class="fas fa-users"></i><span>Editors</span></button>
+      </nav>
 
-          <div id="postList" class="post-list"></div>
+      <main class="content">
 
-          <div id="officerTools" class="chief-tools" hidden>
-            <h3>Officers</h3>
-            <button type="button" id="editorsBtn" class="btn secondary">Manage editors</button>
-            <button type="button" id="importBtn" class="btn secondary">Import site articles</button>
-            <button type="button" id="rebuildBtn" class="btn secondary">Refresh public list</button>
-          </div>
-        </aside>
-
-        <section class="panel editor-panel">
-          <div class="editor-head">
-            <h2 id="editorTitle">Create Post</h2>
-            <span id="statusBadge" class="status-badge draft">Draft</span>
-          </div>
-          <p id="lockNote" class="lock-note" hidden></p>
-
-          <form id="postForm" class="form-grid" novalidate>
-            <label>Title
-              <input id="postTitle" maxlength="200" required />
-            </label>
-
-            <label>Slug
-              <input id="postSlug" maxlength="120" placeholder="made from the title" />
-            </label>
-
-            <label>Excerpt
-              <textarea id="postExcerpt" rows="3" maxlength="600"></textarea>
-            </label>
-
-            <label>Category
-              <select id="postCategory"></select>
-            </label>
-
-            <label>Tags (comma separated)
-              <input id="postTags" placeholder="service, health, blood donation" />
-            </label>
-
-            <label>Author
-              <input id="postAuthor" maxlength="100" />
-            </label>
-
-            <label>Read Time
-              <input id="postReadTime" maxlength="30" placeholder="4 min read" />
-            </label>
-
-            <label>Date shown on the blog
-              <input id="postDate" type="date" />
-              <span class="hint">Leave empty to use the day it is published.</span>
-            </label>
-
-            <label>Featured Post
-              <select id="postFeatured">
-                <option value="false">No</option>
-                <option value="true">Yes</option>
-              </select>
-            </label>
-
-            <label>Cover Image
-              <input id="coverUpload" type="file" accept="image/jpeg,image/png,image/webp" />
-              <span id="coverNote" class="hint"></span>
-            </label>
-            <button type="button" id="removeCoverBtn" class="btn secondary small" hidden>Remove cover image</button>
-
-            <div class="editor-group">
-              <label>Content (Rich Text Editor)</label>
-              <div id="postContentEditor"></div>
+        <!-- ── Posts: the list ──────────────────────────────────────────── -->
+        <section id="postsSection" class="narrow">
+          <div class="page-head">
+            <div>
+              <p class="eyebrow">Content</p>
+              <h1>Posts</h1>
+              <p class="muted" id="countLine"></p>
             </div>
-
-            <fieldset class="seo-box">
-              <legend>SEO</legend>
-              <label>SEO Title
-                <input id="seoTitle" maxlength="200" />
-              </label>
-              <label>SEO Description
-                <textarea id="seoDescription" rows="2" maxlength="400"></textarea>
-              </label>
-              <label>SEO Keywords (comma separated)
-                <input id="seoKeywords" />
-              </label>
-            </fieldset>
-
-            <div class="actions-row">
-              <button type="button" id="saveBtn" class="btn">Save</button>
-              <button type="button" id="reviewBtn" class="btn secondary">Send for review</button>
-              <button type="button" id="publishBtn" class="btn">Publish</button>
-              <button type="button" id="unpublishBtn" class="btn secondary">Unpublish</button>
-              <button type="button" id="deleteBtn" class="btn danger" hidden>Delete</button>
+            <div class="page-actions">
+              <button type="button" class="btn btn-ghost" id="importBtn" hidden><i class="fas fa-file-import"></i><span>Import site articles</span></button>
+              <button type="button" class="btn btn-primary" id="newPostBtn"><i class="fas fa-plus"></i><span>New post</span></button>
             </div>
-          </form>
-        </section>
+          </div>
 
-        <section class="panel preview-panel">
-          <h2>Preview</h2>
-          <article id="previewCard" class="preview-card">
-            <h3 id="previewTitle">Post title preview</h3>
-            <img id="previewImage" class="preview-image" alt="Cover preview" hidden />
-            <p id="previewMeta"></p>
-            <p id="previewExcerpt"></p>
-            <div id="previewContent"></div>
-          </article>
-        </section>
+          <div class="filters">
+            <div class="input-wrap search">
+              <i class="fas fa-magnifying-glass"></i>
+              <input type="search" id="postSearch" placeholder="Search by title or author" aria-label="Search posts" />
+            </div>
+            <div class="tabs" id="statusTabs" role="tablist" aria-label="Show posts by status"></div>
+          </div>
 
-        <section id="editorsPanel" class="panel editors-panel" hidden>
-          <h2>Blog editors</h2>
-          <p class="muted">
-            The Secretary, President and Super Admin can always sign in and publish; they are not on this list.
-            Here you can let other active Mora Connect members in as editors. An editor writes drafts and sends
-            them for review, but cannot publish.
+          <section class="list" id="postList" aria-live="polite"></section>
+          <p class="empty" id="emptyState" hidden><i class="fas fa-folder-open"></i><span></span></p>
+
+          <p class="muted small tools-note" id="rebuildNote" hidden>
+            A published post is not showing on the blog?
+            <button type="button" class="link-btn" id="rebuildBtn">Refresh the blog's list</button>
           </p>
-          <div id="editorsList" class="editors-list"></div>
-          <form id="editorForm" class="editor-add-form">
-            <label>Mora Connect email
-              <input id="editorEmail" type="email" required />
-            </label>
-            <label>Name
-              <input id="editorName" maxlength="100" required />
-            </label>
-            <button type="submit" class="btn">Add editor</button>
-          </form>
         </section>
-      </section>
-    </main>
-    </div>
 
-    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+        <!-- ── Posts: add / edit, with a live preview beside the form ───── -->
+        <section id="editorSection" hidden>
+          <div class="page-head">
+            <div>
+              <button type="button" class="link-btn back-btn" id="backBtn"><i class="fas fa-arrow-left"></i> All posts</button>
+              <h1><span id="editorTitle">New post</span> <span class="pill draft" id="statusBadge">Draft</span></h1>
+            </div>
+          </div>
+
+          <p class="lock-note" id="lockNote" hidden><i class="fas fa-lock"></i><span></span></p>
+
+          <div class="editor">
+            <form class="card editor-form" id="postForm" novalidate>
+              <div class="form-grid">
+                <label class="field">
+                  <span>Title</span>
+                  <input id="postTitle" maxlength="200" placeholder="What is the story about?" required />
+                </label>
+
+                <label class="field half">
+                  <span>Category</span>
+                  <select id="postCategory"></select>
+                </label>
+                <label class="field half">
+                  <span>Author</span>
+                  <input id="postAuthor" maxlength="100" placeholder="Name shown on the blog" />
+                </label>
+
+                <label class="field">
+                  <span>Short summary</span>
+                  <textarea id="postExcerpt" rows="2" maxlength="600" placeholder="One or two sentences shown on the card"></textarea>
+                </label>
+
+                <label class="field third">
+                  <span>Date on the blog</span>
+                  <input id="postDate" type="date" />
+                </label>
+                <label class="field third">
+                  <span>Read time</span>
+                  <input id="postReadTime" maxlength="30" placeholder="4 min read" />
+                </label>
+                <label class="field third">
+                  <span>Featured</span>
+                  <select id="postFeatured">
+                    <option value="false">No</option>
+                    <option value="true">Yes</option>
+                  </select>
+                </label>
+
+                <label class="field">
+                  <span>Tags</span>
+                  <input id="postTags" placeholder="service, health, blood donation" />
+                  <small class="hint">Separate tags with commas.</small>
+                </label>
+
+                <div class="field">
+                  <span>Cover picture</span>
+                  <label class="dropzone" id="dropzone">
+                    <input type="file" id="coverUpload" accept="image/jpeg,image/png,image/webp" hidden />
+                    <i class="fas fa-cloud-arrow-up"></i>
+                    <b id="coverName">Choose a picture or drop it here</b>
+                    <small id="coverNote">JPG, PNG or WebP. Large photos are made smaller for you.</small>
+                  </label>
+                  <button type="button" class="link-btn" id="removeCoverBtn" hidden><i class="fas fa-xmark"></i> Remove the cover picture</button>
+                </div>
+
+                <div class="field">
+                  <span>Article</span>
+                  <div id="postContentEditor"></div>
+                </div>
+
+                <details class="field more">
+                  <summary>Link and search settings (optional)</summary>
+                  <label class="field">
+                    <span>Link name (slug)</span>
+                    <input id="postSlug" maxlength="120" placeholder="made from the title" />
+                    <small class="hint">The end of the post's address. Lowercase English letters, numbers and dashes.</small>
+                  </label>
+                  <label class="field">
+                    <span>Search title</span>
+                    <input id="seoTitle" maxlength="200" />
+                  </label>
+                  <label class="field">
+                    <span>Search description</span>
+                    <textarea id="seoDescription" rows="2" maxlength="400"></textarea>
+                  </label>
+                  <label class="field">
+                    <span>Search keywords</span>
+                    <input id="seoKeywords" placeholder="comma separated" />
+                  </label>
+                </details>
+              </div>
+
+              <p class="form-error" id="formError" role="alert" hidden></p>
+
+              <div class="actions">
+                <button type="button" class="btn btn-ghost btn-delete push-left" id="deleteBtn"><i class="fas fa-trash"></i><span>Delete</span></button>
+                <button type="button" class="btn btn-ghost" id="cancelBtn"><span>Cancel</span></button>
+                <button type="button" class="btn btn-ghost" id="unpublishBtn"><span>Unpublish</span></button>
+                <button type="button" class="btn btn-ghost" id="saveBtn"><i class="fas fa-check"></i><span>Save</span></button>
+                <button type="button" class="btn btn-primary" id="reviewBtn"><i class="fas fa-paper-plane"></i><span>Send for review</span></button>
+                <button type="button" class="btn btn-primary" id="publishBtn"><i class="fas fa-bullhorn"></i><span>Publish</span></button>
+              </div>
+            </form>
+
+            <aside class="card preview" aria-label="Preview">
+              <p class="eyebrow">How it will look</p>
+
+              <!-- A copy of the card on the blog -->
+              <div class="pv">
+                <div class="pv-media">
+                  <img id="previewImage" alt="" hidden />
+                  <i class="fas fa-newspaper" id="previewIcon"></i>
+                  <span class="pv-badge" id="previewBadge"></span>
+                </div>
+                <div class="pv-body">
+                  <div class="pv-meta"><span class="pv-cat" id="previewCategory"></span><span id="previewDate"></span></div>
+                  <h3 id="previewTitle"></h3>
+                  <p id="previewExcerpt"></p>
+                  <div class="pv-foot"><span id="previewAuthor"></span><span id="previewRead"></span></div>
+                </div>
+              </div>
+
+              <p class="eyebrow">The article</p>
+              <div class="pv-article" id="previewContent"></div>
+            </aside>
+          </div>
+        </section>
+
+        <!-- ── Editors (officers only) ──────────────────────────────────── -->
+        <section id="editorsSection" class="narrow" hidden>
+          <div class="page-head">
+            <div>
+              <p class="eyebrow">People</p>
+              <h1>Editors</h1>
+              <p class="muted">
+                The Secretary, President and Super Admin can always sign in and publish; they are not on this list.
+                Here you can let other active Mora Connect members in as editors. An editor writes drafts and sends
+                them for review, but cannot publish.
+              </p>
+            </div>
+          </div>
+
+          <form class="card editor-add" id="editorForm">
+            <div class="form-grid">
+              <label class="field half">
+                <span>Mora Connect email</span>
+                <input id="editorEmail" type="email" placeholder="member@example.com" required />
+              </label>
+              <label class="field half">
+                <span>Name</span>
+                <input id="editorName" maxlength="100" placeholder="Their name" required />
+              </label>
+            </div>
+            <div class="actions">
+              <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i><span>Add editor</span></button>
+            </div>
+          </form>
+
+          <section class="list" id="editorsList" aria-live="polite"></section>
+        </section>
+
+      </main>
+    </div>
   </div>
+
+  <!-- Asked before anything is deleted or thrown away -->
+  <div class="dialog-backdrop" id="confirmDialog" hidden>
+    <div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmText">
+      <div class="dialog-icon" id="confirmIcon"><i class="fas fa-trash"></i></div>
+      <h2 id="confirmTitle"></h2>
+      <p id="confirmText"></p>
+      <div class="actions">
+        <button type="button" class="btn btn-ghost" id="confirmCancel">Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmOk"><span>Delete</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-stack" id="toasts" aria-live="polite"></div>
 
   <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>

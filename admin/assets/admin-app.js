@@ -1,3 +1,21 @@
+/**
+ * admin-app.js — the blog admin panel
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Laid out like the club website's admin: a list of posts with Edit / Delete on
+ * each row, and an add / edit form with a live preview beside it.
+ *
+ *   §1  Helpers ............... toasts, the confirm dialog, error wording
+ *   §2  Sign in / sign out .... who may use the panel
+ *   §3  Posts list ............ search, status tabs, rows
+ *   §4  Add / edit form ....... fields, permissions, cover picture, preview
+ *   §5  Saving and deleting ... what is written to Mora Connect
+ *   §6  Import ................ copying the site's hand-written articles in
+ *   §7  Editors ............... other members the officers let in
+ *   §8  Start-up
+ *
+ * What an account may really do is decided by the security rules in Mora
+ * Connect; this file only decides what the screen offers.
+ */
 (function () {
   const cfg = window.ADMIN_CONFIG;
   const svc = window.AdminFirebase;
@@ -17,23 +35,25 @@
     loginError: $("loginError"),
     loginBtn: $("loginBtn"),
     logoutBtn: $("logoutBtn"),
-    authBadge: $("authBadge"),
+    userName: $("userName"),
+    userRole: $("userRole"),
+    navEditors: $("navEditors"),
 
-    statPosts: $("statPosts"),
-    statDrafts: $("statDrafts"),
-    statReview: $("statReview"),
-    statPublished: $("statPublished"),
+    postsSection: $("postsSection"),
+    editorSection: $("editorSection"),
+    editorsSection: $("editorsSection"),
 
-    postList: $("postList"),
+    countLine: $("countLine"),
+    importBtn: $("importBtn"),
     newPostBtn: $("newPostBtn"),
     postSearch: $("postSearch"),
-    statusFilter: $("statusFilter"),
-
-    officerTools: $("officerTools"),
-    editorsBtn: $("editorsBtn"),
-    importBtn: $("importBtn"),
+    statusTabs: $("statusTabs"),
+    postList: $("postList"),
+    emptyState: $("emptyState"),
+    rebuildNote: $("rebuildNote"),
     rebuildBtn: $("rebuildBtn"),
 
+    backBtn: $("backBtn"),
     editorTitle: $("editorTitle"),
     statusBadge: $("statusBadge"),
     lockNote: $("lockNote"),
@@ -47,41 +67,62 @@
     postReadTime: $("postReadTime"),
     postDate: $("postDate"),
     postFeatured: $("postFeatured"),
+    dropzone: $("dropzone"),
     coverUpload: $("coverUpload"),
+    coverName: $("coverName"),
     coverNote: $("coverNote"),
     removeCoverBtn: $("removeCoverBtn"),
     seoTitle: $("seoTitle"),
     seoDescription: $("seoDescription"),
     seoKeywords: $("seoKeywords"),
+    formError: $("formError"),
 
+    deleteBtn: $("deleteBtn"),
+    cancelBtn: $("cancelBtn"),
+    unpublishBtn: $("unpublishBtn"),
     saveBtn: $("saveBtn"),
     reviewBtn: $("reviewBtn"),
     publishBtn: $("publishBtn"),
-    unpublishBtn: $("unpublishBtn"),
-    deleteBtn: $("deleteBtn"),
 
-    previewTitle: $("previewTitle"),
     previewImage: $("previewImage"),
-    previewMeta: $("previewMeta"),
+    previewIcon: $("previewIcon"),
+    previewBadge: $("previewBadge"),
+    previewCategory: $("previewCategory"),
+    previewDate: $("previewDate"),
+    previewTitle: $("previewTitle"),
     previewExcerpt: $("previewExcerpt"),
+    previewAuthor: $("previewAuthor"),
+    previewRead: $("previewRead"),
     previewContent: $("previewContent"),
 
-    editorsPanel: $("editorsPanel"),
-    editorsList: $("editorsList"),
     editorForm: $("editorForm"),
     editorEmail: $("editorEmail"),
     editorName: $("editorName"),
+    editorsList: $("editorsList"),
 
-    toast: $("toast"),
+    confirmDialog: $("confirmDialog"),
+    confirmIcon: $("confirmIcon"),
+    confirmTitle: $("confirmTitle"),
+    confirmText: $("confirmText"),
+    confirmCancel: $("confirmCancel"),
+    confirmOk: $("confirmOk"),
+    toasts: $("toasts"),
   };
+
+  const navItems = Array.from(document.querySelectorAll(".nav-item"));
 
   const appState = {
     posts: [],
     editor: null,        // the rich-text editor
     access: null,        // who is signed in: { uid, email, name, memberRole, blogRole: "officer" | "editor" }
+    section: "posts",    // "posts" (the list), "editor" (add / edit a post) or "editors"
+    statusFilter: "all",
     loadedPost: null,    // the post in the form; null while writing a new one
-    coverPath: "",       // the cover the form holds (a Storage path or a site file)
+    coverPath: "",       // the cover the post has now (a Storage path or a site file)
+    pickedCover: null,   // a new picture chosen in the form, uploaded on save
     localPreviewImageUrl: null,
+    filling: false,      // the form is being filled by the panel, not typed in
+    dirty: false,        // the form has changes that are not saved
     busy: false,
     loginMessage: "",    // shown on the sign-in screen the next time it appears (e.g. "Access denied: …")
   };
@@ -93,6 +134,8 @@
   // The same categories as the tabs on the blog
   const CATEGORIES = ["news", "events", "service", "leadership", "education", "environment", "health", "technology", "stories", "achievements"];
   const STATUS_LABELS = { draft: "Draft", review: "Waiting for review", published: "Published" };
+  const STATUS_PILL = { draft: "draft", review: "review", published: "live" };
+
   // The Mora Connect roles that run the blog — the same three that may use the club website's admin.
   // Kept in step with isAdmin() in the portal's rules.
   const OFFICER_ROLES = ["secretary", "president", "superAdmin"];
@@ -105,15 +148,52 @@
   const COVER_MAX_SIDE = 1600;
   const COVER_MAX_BYTES = 3 * 1024 * 1024;
 
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // §1  HELPERS
+  // ───────────────────────────────────────────────────────────────────────────
+
   const capitalise = (value) => String(value || "").replace(/^./, (m) => m.toUpperCase());
+  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
   function toast(message, isError) {
-    els.toast.textContent = message;
-    els.toast.className = isError ? "toast show error" : "toast show";
-    clearTimeout(toast.timer);
-    toast.timer = setTimeout(() => {
-      els.toast.className = "toast";
-    }, isError ? 7000 : 2600);
+    const node = document.createElement("div");
+    node.className = `toast ${isError ? "error" : "success"}`;
+    const icon = document.createElement("i");
+    icon.className = `fas ${isError ? "fa-circle-exclamation" : "fa-circle-check"}`;
+    const text = document.createElement("span");
+    text.textContent = message;
+    node.append(icon, text);
+    els.toasts.append(node);
+    setTimeout(() => node.remove(), isError ? 7000 : 4000);
+  }
+
+  /**
+   * Resolves true only if the person presses the dialog's main button.
+   * `calm` is for questions that delete nothing (leaving a page, importing).
+   */
+  function askConfirm({ title, text, okLabel, icon, calm }) {
+    return new Promise((resolve) => {
+      els.confirmTitle.textContent = title;
+      els.confirmText.textContent = text;
+      els.confirmOk.querySelector("span").textContent = okLabel || "Delete";
+      els.confirmOk.className = calm ? "btn btn-primary" : "btn btn-danger";
+      els.confirmIcon.className = calm ? "dialog-icon calm" : "dialog-icon";
+      els.confirmIcon.firstElementChild.className = `fas ${icon || "fa-trash"}`;
+      els.confirmDialog.hidden = false;
+      els.confirmCancel.focus();
+
+      const onKey = (e) => { if (e.key === "Escape") done(false); };
+      function done(answer) {
+        els.confirmDialog.hidden = true;
+        els.confirmOk.onclick = els.confirmCancel.onclick = null;
+        document.removeEventListener("keydown", onKey);
+        resolve(answer);
+      }
+      els.confirmOk.onclick = () => done(true);
+      els.confirmCancel.onclick = () => done(false);
+      document.addEventListener("keydown", onKey);
+    });
   }
 
   function describeError(err) {
@@ -164,7 +244,19 @@
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   }
 
-  // ── Views ──────────────────────────────────────────────────────────────────
+  /** "2026-07-19" → "19 Jul 2026". A calendar day, so it reads the same in every time zone. */
+  function formatDay(isoDay) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(isoDay || ""));
+    if (!m) return "";
+    return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).toLocaleDateString("en-GB", {
+      day: "numeric", month: "short", year: "numeric", timeZone: "UTC",
+    });
+  }
+
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // §2  SIGN IN / SIGN OUT
+  // ───────────────────────────────────────────────────────────────────────────
 
   /** One of: "boot" (checking who is signed in), "login", "admin". */
   function showView(name) {
@@ -232,82 +324,182 @@
       throw err;
     }
 
-    els.authBadge.textContent = `${access.name} · ${officer ? ROLE_LABELS[access.memberRole] : "Editor"}`;
-    els.officerTools.hidden = !officer;
-    els.editorsPanel.hidden = true;
+    els.userName.textContent = access.name;
+    els.userName.title = access.email;
+    els.userRole.textContent = officer ? ROLE_LABELS[access.memberRole] : "Editor";
+    els.navEditors.hidden = !officer;
+    els.rebuildNote.hidden = !officer;
     showView("admin");
-    resetToNewPost();
+    showSection("posts");
   }
 
-  /** Signed out: nothing of the last editor's work stays on the page. */
+  /** Signed out: nothing of the last person's work stays on the page. */
   function leaveAdmin() {
     appState.access = null;
     appState.posts = [];
     appState.loadedPost = null;
     appState.coverPath = "";
+    appState.pickedCover = null;
+    appState.dirty = false;
+    els.confirmDialog.hidden = true;
     els.postList.innerHTML = "";
     els.editorsList.innerHTML = "";
+    els.postSearch.value = "";
     els.postForm.reset();
-    if (appState.editor) appState.editor.setData("");
-    els.authBadge.textContent = "";
+    if (appState.editor) {
+      appState.filling = true;
+      appState.editor.setData("");
+      appState.filling = false;
+    }
+    els.userName.textContent = "";
+    els.userRole.textContent = "";
     showView("login");
     showLoginError(appState.loginMessage);
     appState.loginMessage = "";
     els.loginEmail.focus();
   }
 
-  // ── Post list ──────────────────────────────────────────────────────────────
-
-  function renderStats(posts) {
-    const count = (status) => posts.filter((p) => p.status === status).length;
-    els.statPosts.textContent = String(posts.length);
-    els.statDrafts.textContent = String(count("draft"));
-    els.statReview.textContent = String(count("review"));
-    els.statPublished.textContent = String(count("published"));
-  }
-
-  function postItemHtml(post) {
-    const status = STATUS_LABELS[post.status] ? post.status : "draft";
-    const mine = post.createdByUid === appState.access.uid;
-    const active = appState.loadedPost && appState.loadedPost.id === post.id;
-    return `
-      <button type="button" class="post-item${active ? " active" : ""}" data-id="${esc(post.id)}">
-        <span class="post-item-text">
-          <strong>${esc(post.title || "Untitled")}</strong>
-          <small>${esc(post.date || "no date yet")}${mine ? " · yours" : ""}</small>
-        </span>
-        <span class="status-badge ${status}">${STATUS_LABELS[status]}</span>
-      </button>
-    `;
-  }
-
-  function renderPostList() {
-    const q = els.postSearch.value.trim().toLowerCase();
-    const s = els.statusFilter.value;
-
-    const shown = appState.posts.filter((p) => {
-      const matchesQuery = !q || [p.title, p.slug, p.author].join(" ").toLowerCase().includes(q);
-      const matchesStatus = s === "all" || p.status === s;
-      return matchesQuery && matchesStatus;
-    });
-
-    els.postList.innerHTML = shown.map(postItemHtml).join("") || '<p class="muted">No posts found.</p>';
-
-    Array.from(els.postList.querySelectorAll(".post-item")).forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const post = appState.posts.find((p) => p.id === btn.getAttribute("data-id"));
-        if (post) writeForm(post);
-      });
+  /** True if it is fine to leave the form: nothing unsaved, or the person agrees to lose it. */
+  async function okToLeaveForm() {
+    if (appState.section !== "editor" || !appState.dirty) return true;
+    return askConfirm({
+      title: "Leave without saving?",
+      text: "The changes you made to this post will be lost.",
+      okLabel: "Leave",
+      icon: "fa-arrow-right-from-bracket",
+      calm: true,
     });
   }
+
+  function showSection(name) {
+    appState.section = name;
+    els.postsSection.hidden = name !== "posts";
+    els.editorSection.hidden = name !== "editor";
+    els.editorsSection.hidden = name !== "editors";
+    const highlighted = name === "editor" ? "posts" : name;
+    navItems.forEach((btn) => btn.classList.toggle("active", btn.dataset.section === highlighted));
+    window.scrollTo(0, 0);
+  }
+
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // §3  POSTS LIST
+  // ───────────────────────────────────────────────────────────────────────────
 
   async function refreshPosts() {
     appState.posts = await svc.listPosts(cfg);
-    renderStats(appState.posts);
-    renderPostList();
+    renderPosts();
   }
 
-  // ── The form ───────────────────────────────────────────────────────────────
+  function renderTabs(counts) {
+    const tabs = [
+      ["all", "All", appState.posts.length],
+      ["draft", "Drafts", counts.draft],
+      ["review", "Waiting for review", counts.review],
+      ["published", "Published", counts.published],
+    ];
+    els.statusTabs.innerHTML = tabs.map(([value, label, count]) => `
+      <button type="button" class="tab${appState.statusFilter === value ? " active" : ""}" role="tab"
+        aria-selected="${appState.statusFilter === value}" data-status="${value}">${label}<b>${count}</b></button>
+    `).join("");
+  }
+
+  function rowHtml(post) {
+    const status = STATUS_LABELS[post.status] ? post.status : "draft";
+    const editable = canEdit(post);
+    const mine = post.createdByUid === appState.access.uid;
+    const cover = env.coverUrl(post.coverImage, "/");
+    const meta = [
+      capitalise(post.category),
+      formatDay(post.date) || "No date yet",
+      post.author ? `By ${post.author}` : "",
+      mine && !isOfficer() ? "yours" : "",
+    ].filter(Boolean).join(" · ");
+
+    return `
+      <div class="row" data-id="${esc(post.id)}">
+        ${cover
+          ? `<img class="row-thumb" src="${esc(cover)}" alt="" loading="lazy" />`
+          : '<div class="row-thumb placeholder"><i class="fas fa-image"></i></div>'}
+        <div class="row-main">
+          <h3>
+            <button type="button" class="row-title" data-act="open">${esc(post.title || "Untitled")}</button>
+            <span class="pill ${STATUS_PILL[status]}">${STATUS_LABELS[status]}</span>
+            ${post.featured ? '<span class="pill featured">Featured</span>' : ""}
+          </h3>
+          <p class="row-meta">${esc(meta)}</p>
+        </div>
+        <div class="row-actions">
+          ${status === "published"
+            ? `<a class="btn btn-ghost btn-sm btn-icon" href="/?post=${encodeURIComponent(post.slug)}" target="_blank" rel="noopener" title="Open on the blog" aria-label="Open on the blog"><i class="fas fa-arrow-up-right-from-square"></i></a>`
+            : ""}
+          <button type="button" class="btn btn-ghost btn-sm" data-act="open">
+            <i class="fas ${editable ? "fa-pen" : "fa-eye"}"></i><span>${editable ? "Edit" : "View"}</span>
+          </button>
+          ${editable
+            ? '<button type="button" class="btn btn-ghost btn-sm btn-icon btn-delete" data-act="delete" title="Delete" aria-label="Delete"><i class="fas fa-trash"></i></button>'
+            : ""}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderPosts() {
+    const posts = appState.posts;
+    const counts = { draft: 0, review: 0, published: 0 };
+    posts.forEach((p) => { if (counts[p.status] !== undefined) counts[p.status] += 1; });
+
+    els.countLine.textContent = posts.length
+      ? [plural(posts.length, "post", "posts"), `${counts.published} published`,
+        plural(counts.draft, "draft", "drafts"), `${counts.review} waiting for review`].join(" · ")
+      : "Nothing written here yet.";
+    renderTabs(counts);
+
+    const q = els.postSearch.value.trim().toLowerCase();
+    const shown = posts.filter((p) => {
+      const matchesQuery = !q || [p.title, p.author, p.category].join(" ").toLowerCase().includes(q);
+      const matchesStatus = appState.statusFilter === "all" || p.status === appState.statusFilter;
+      return matchesQuery && matchesStatus;
+    });
+    // Work in progress first (latest change on top), then what is on the blog, newest first
+    const unpublished = (p) => (p.status === "published" ? 0 : 1);
+    shown.sort((a, b) =>
+      unpublished(b) - unpublished(a) ||
+      (unpublished(a)
+        ? String(b.updatedAt).localeCompare(String(a.updatedAt))
+        : String(b.date).localeCompare(String(a.date))));
+
+    els.postList.innerHTML = shown.map(rowHtml).join("");
+    els.emptyState.hidden = shown.length > 0;
+    if (!shown.length) {
+      els.emptyState.querySelector("span").textContent = posts.length
+        ? "No posts match. Try another search, or the “All” tab."
+        : "No posts yet. Press “New post” to write the first one.";
+    }
+
+    if (isOfficer()) {
+      const waiting = siteArticlesToImport().length;
+      els.importBtn.hidden = waiting === 0;
+      els.importBtn.querySelector("span").textContent = `Import ${plural(waiting, "site article", "site articles")}`;
+    } else {
+      els.importBtn.hidden = true;
+    }
+  }
+
+  function onPostListClick(event) {
+    const control = event.target.closest("[data-act]");
+    if (!control) return;
+    const row = control.closest(".row");
+    const post = appState.posts.find((p) => p.id === row.getAttribute("data-id"));
+    if (!post) return;
+    if (control.getAttribute("data-act") === "delete") deletePost(post);
+    else openEditor(post);
+  }
+
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // §4  ADD / EDIT FORM
+  // ───────────────────────────────────────────────────────────────────────────
 
   function fillCategories() {
     els.postCategory.innerHTML = CATEGORIES.map((c) => `<option value="${c}">${capitalise(c)}</option>`).join("");
@@ -315,6 +507,12 @@
 
   function hasSlugConflict(slugValue, currentId) {
     return appState.posts.some((p) => p.slug === slugValue && p.id !== currentId);
+  }
+
+  function showFormError(message) {
+    els.formError.textContent = message;
+    els.formError.hidden = !message;
+    if (message) els.formError.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }
 
   function readForm() {
@@ -341,8 +539,10 @@
   function writeForm(post) {
     const p = post || {};
     const seo = p.seo || {};
+    appState.filling = true;
     appState.loadedPost = post || null;
     appState.coverPath = p.coverImage || "";
+    appState.pickedCover = null;
 
     els.postTitle.value = p.title || "";
     els.postSlug.value = p.slug || "";
@@ -359,29 +559,40 @@
     els.seoKeywords.value = (seo.keywords || []).join(", ");
     if (appState.editor) appState.editor.setData(p.contentHtml || "");
 
-    els.editorTitle.textContent = post ? "Edit Post" : "Create Post";
+    appState.filling = false;
+    appState.dirty = false;
+    showFormError("");
     applyPermissions();
-    renderPostList();
     renderPreview();
   }
 
-  function resetToNewPost() {
-    writeForm(null);
+  function openEditor(post) {
+    writeForm(post || null);
+    showSection("editor");
+    if (!post) els.postTitle.focus();
   }
 
-  /** Shows the buttons this editor may use on the post in the form, and locks the rest. */
+  async function closeEditor() {
+    if (!(await okToLeaveForm())) return;
+    appState.dirty = false;
+    renderPosts();
+    showSection("posts");
+  }
+
+  /** Shows the buttons this person may use on the post in the form, and locks the rest. */
   function applyPermissions() {
     const post = appState.loadedPost;
     const status = post ? post.status : "draft";
     const editable = canEdit(post);
     const officer = isOfficer();
 
-    els.statusBadge.textContent = post ? STATUS_LABELS[status] : "New";
-    els.statusBadge.className = `status-badge ${post ? status : "draft"}`;
+    els.editorTitle.textContent = !post ? "New post" : editable ? "Edit post" : "View post";
+    els.statusBadge.textContent = post ? STATUS_LABELS[status] : "Not saved yet";
+    els.statusBadge.className = `pill ${STATUS_PILL[status]}`;
 
     els.lockNote.hidden = editable;
     if (!editable) {
-      els.lockNote.textContent = status === "published"
+      els.lockNote.querySelector("span").textContent = status === "published"
         ? "This post is published. Only the Secretary, President or Super Admin can change it."
         : "This post belongs to another editor. You can read it, but not change it.";
     }
@@ -391,6 +602,7 @@
     });
     // Featuring a post is the officers' decision
     els.postFeatured.disabled = !editable || !officer;
+    els.dropzone.classList.toggle("disabled", !editable);
     if (appState.editor) {
       if (editable) appState.editor.disableReadOnlyMode("blog-admin");
       else appState.editor.enableReadOnlyMode("blog-admin");
@@ -400,72 +612,51 @@
     els.reviewBtn.hidden = !(editable && !officer && status === "draft");
     els.publishBtn.hidden = !(officer && status !== "published");
     els.unpublishBtn.hidden = !(editable && post && status !== "draft");
-    els.unpublishBtn.textContent = status === "published" ? "Unpublish" : "Back to draft";
+    els.unpublishBtn.querySelector("span").textContent = status === "published" ? "Unpublish" : "Back to draft";
     els.deleteBtn.hidden = !(editable && post);
+    els.cancelBtn.querySelector("span").textContent = editable ? "Cancel" : "Back";
 
-    renderCoverNote();
-  }
-
-  function renderCoverNote() {
-    const editable = canEdit(appState.loadedPost);
-    const picked = els.coverUpload.files && els.coverUpload.files[0];
-    els.coverNote.textContent = picked
-      ? "The new picture is uploaded when you save."
-      : appState.coverPath
-        ? "This post has a cover picture. Choose a file to replace it."
-        : "JPG, PNG or WebP. Large photos are made smaller before upload.";
-    els.removeCoverBtn.hidden = !(editable && appState.coverPath && !picked);
+    renderCover();
   }
 
   function setBusy(busy) {
     appState.busy = busy;
-    [els.saveBtn, els.reviewBtn, els.publishBtn, els.unpublishBtn, els.deleteBtn,
+    [els.saveBtn, els.reviewBtn, els.publishBtn, els.unpublishBtn, els.deleteBtn, els.cancelBtn,
       els.importBtn, els.rebuildBtn, els.newPostBtn].forEach((btn) => {
       btn.disabled = busy;
     });
   }
 
-  // ── Preview ────────────────────────────────────────────────────────────────
-
-  function releaseLocalPreviewImage() {
-    if (appState.localPreviewImageUrl) {
-      URL.revokeObjectURL(appState.localPreviewImageUrl);
-      appState.localPreviewImageUrl = null;
-    }
+  function markDirty() {
+    if (!appState.filling) appState.dirty = true;
   }
 
-  let previewRun = 0;
+  // ── Cover picture ──
 
-  async function renderPreview() {
-    const p = readForm();
-    const status = appState.loadedPost ? appState.loadedPost.status : "draft";
-    els.previewTitle.textContent = p.title || "Post title preview";
-    els.previewMeta.textContent = `${capitalise(p.category)} | ${STATUS_LABELS[status]} | ${p.readTime || "read time"}`;
-    els.previewExcerpt.textContent = p.excerpt || "Excerpt preview...";
-
-    const file = els.coverUpload.files && els.coverUpload.files[0];
-    releaseLocalPreviewImage();
-    if (file) {
-      appState.localPreviewImageUrl = URL.createObjectURL(file);
-    }
-    const imageUrl = appState.localPreviewImageUrl || env.coverUrl(appState.coverPath, "/");
-    if (imageUrl) {
-      els.previewImage.src = imageUrl;
-      els.previewImage.hidden = false;
-    } else {
-      els.previewImage.removeAttribute("src");
-      els.previewImage.hidden = true;
-    }
-
-    // Shown exactly as the blog will show it: cleaned of anything that could run code
-    const run = ++previewRun;
-    const html = await safe.clean(p.contentHtml);
-    if (run === previewRun) {
-      els.previewContent.innerHTML = html || "<p>Content preview...</p>";
-    }
+  function renderCover() {
+    const editable = canEdit(appState.loadedPost);
+    const picked = appState.pickedCover;
+    els.dropzone.classList.toggle("has-file", !!(picked || appState.coverPath));
+    els.coverName.textContent = picked
+      ? picked.name
+      : appState.coverPath ? "This post has a cover picture" : "Choose a picture or drop it here";
+    els.coverNote.textContent = picked
+      ? "It is uploaded when you save."
+      : appState.coverPath ? "Choose another picture to replace it." : "JPG, PNG or WebP. Large photos are made smaller for you.";
+    els.removeCoverBtn.hidden = !(editable && (picked || appState.coverPath));
   }
 
-  // ── Cover picture ──────────────────────────────────────────────────────────
+  function pickCover(file) {
+    if (!file || !canEdit(appState.loadedPost)) return;
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+      toast("Use a JPG, PNG or WebP picture for the cover.", true);
+      return;
+    }
+    appState.pickedCover = file;
+    markDirty();
+    renderCover();
+    renderPreview();
+  }
 
   function loadPicture(file) {
     return new Promise((resolve, reject) => {
@@ -479,9 +670,6 @@
 
   /** A phone photo is several MB; the blog needs far less. Returns what to upload. */
   async function shrinkPicture(file) {
-    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
-      throw new Error("Use a JPG, PNG or WebP picture for the cover.");
-    }
     const img = await loadPicture(file);
     const scale = Math.min(1, COVER_MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
     if (scale === 1 && file.size <= 400 * 1024) {
@@ -502,16 +690,62 @@
     return { blob, type: "image/jpeg" };
   }
 
-  // ── Saving ─────────────────────────────────────────────────────────────────
+  // ── Preview (beside the form) ──
+
+  function releaseLocalPreviewImage() {
+    if (appState.localPreviewImageUrl) {
+      URL.revokeObjectURL(appState.localPreviewImageUrl);
+      appState.localPreviewImageUrl = null;
+    }
+  }
+
+  let previewRun = 0;
+
+  async function renderPreview() {
+    const p = readForm();
+    const category = capitalise(p.category);
+    els.previewTitle.textContent = p.title || "Your title will show here";
+    els.previewExcerpt.textContent = p.excerpt || "The short summary will show here.";
+    els.previewCategory.textContent = category;
+    els.previewBadge.textContent = category;
+    els.previewDate.textContent = formatDay(p.date) || "Dated when published";
+    els.previewAuthor.textContent = p.author || "Leo Editorial Team";
+    els.previewRead.textContent = p.readTime || "3 min read";
+
+    releaseLocalPreviewImage();
+    if (appState.pickedCover) {
+      appState.localPreviewImageUrl = URL.createObjectURL(appState.pickedCover);
+    }
+    const imageUrl = appState.localPreviewImageUrl || env.coverUrl(appState.coverPath, "/");
+    if (imageUrl) {
+      els.previewImage.src = imageUrl;
+    } else {
+      els.previewImage.removeAttribute("src");
+    }
+    els.previewImage.hidden = !imageUrl;
+    els.previewIcon.hidden = !!imageUrl;
+
+    // Shown exactly as the blog will show it: cleaned of anything that could run code
+    const run = ++previewRun;
+    const html = await safe.clean(p.contentHtml);
+    if (run === previewRun) {
+      els.previewContent.innerHTML = html || '<p class="pv-empty">The article will show here as you write.</p>';
+    }
+  }
+
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // §5  SAVING AND DELETING
+  // ───────────────────────────────────────────────────────────────────────────
 
   /** A message if the form can't be saved as it is, otherwise "". */
   function formProblem(form, slug, currentId) {
-    if (!form.title) return "Title is required.";
+    if (!form.title) return "Give the post a title.";
     if (form.title.length > LIMITS.title) return `The title is too long (at most ${LIMITS.title} characters).`;
-    if (!slug) return "Add a slug using English letters or numbers (it becomes the post's link).";
-    if (slug.length > LIMITS.slug) return `The slug is too long (at most ${LIMITS.slug} characters).`;
-    if (hasSlugConflict(slug, currentId)) return "Another post already uses this slug. Please change it.";
-    if (form.excerpt.length > LIMITS.excerpt) return `The excerpt is too long (at most ${LIMITS.excerpt} characters).`;
+    if (!slug) return "Open “Link and search settings” and type a link name using English letters or numbers.";
+    if (slug.length > LIMITS.slug) return `The link name is too long (at most ${LIMITS.slug} characters).`;
+    if (hasSlugConflict(slug, currentId)) return "Another post already uses this link name. Change it under “Link and search settings”.";
+    if (form.excerpt.length > LIMITS.excerpt) return `The short summary is too long (at most ${LIMITS.excerpt} characters).`;
     if (form.tags.length > LIMITS.tags) return `Too many tags (at most ${LIMITS.tags}).`;
     if (form.contentHtml.length > LIMITS.content) return "The article is too long to save. Please shorten it.";
     return "";
@@ -539,7 +773,7 @@
       await svc.writePublishedList(cfg, entries);
       return true;
     } catch (err) {
-      toast("Saved, but the blog's list of posts could not be updated. Press “Refresh public list”.", true);
+      toast("Saved, but the blog's list of posts could not be updated. Use “Refresh the blog's list” under the posts.", true);
       return false;
     }
   }
@@ -558,13 +792,14 @@
     els.postSlug.value = slug;
     const problem = formProblem(form, slug, post ? post.id : null);
     if (problem) {
-      toast(problem, true);
+      showFormError(problem);
       return;
     }
+    showFormError("");
 
     const status = targetStatus || (post ? post.status : "draft");
     if (status === "published" && !isOfficer()) {
-      toast("Only the Secretary, President or Super Admin can publish. Send it for review instead.", true);
+      showFormError("Only the Secretary, President or Super Admin can publish. Send it for review instead.");
       return;
     }
     // A published post always has a date; it is set once and then left alone
@@ -577,9 +812,8 @@
       const previousCover = post ? post.coverImage || "" : "";
 
       let coverImage = appState.coverPath;
-      const file = els.coverUpload.files && els.coverUpload.files[0];
-      if (file) {
-        const picture = await shrinkPicture(file);
+      if (appState.pickedCover) {
+        const picture = await shrinkPicture(appState.pickedCover);
         coverImage = await svc.uploadCover(cfg, id, picture.blob, picture.type);
       }
 
@@ -611,27 +845,42 @@
 
       await refreshPosts();
       const listOk = isOfficer() && (wasPublished || status === "published") ? await publishList() : true;
-      writeForm(appState.posts.find((p) => p.id === id) || null);
+      const saved = appState.posts.find((p) => p.id === id) || null;
+
+      // "Publish" and "Send for review" finish the job, so they go back to the
+      // list; a plain save stays on the form so the writing can go on
+      if (targetStatus === "published" || targetStatus === "review") {
+        appState.dirty = false;
+        showSection("posts");
+      } else {
+        writeForm(saved);
+      }
 
       if (listOk) {
         toast(
           targetStatus === "published" ? "Published — it is on the blog now."
-            : targetStatus === "review" ? "Sent for review."
+            : targetStatus === "review" ? "Sent for review. An officer will publish it."
               : targetStatus === "draft" && wasPublished ? "Unpublished — it is a draft again."
                 : "Saved."
         );
       }
     } catch (err) {
-      toast(describeError(err), true);
+      showFormError(describeError(err));
     } finally {
       setBusy(false);
     }
   }
 
-  async function deleteCurrentPost() {
-    const post = appState.loadedPost;
+  /** Asks first. Works from a row in the list and from the form. */
+  async function deletePost(post) {
     if (appState.busy || !post || !canEdit(post)) return;
-    if (!window.confirm(`Delete “${post.title}” permanently?`)) return;
+    const ok = await askConfirm({
+      title: `Delete “${post.title || "Untitled"}”?`,
+      text: post.status === "published"
+        ? "It will be taken off the blog. This cannot be undone."
+        : "This cannot be undone.",
+    });
+    if (!ok) return;
 
     setBusy(true);
     try {
@@ -641,7 +890,10 @@
       }
       await refreshPosts();
       const listOk = isOfficer() && post.status === "published" ? await publishList() : true;
-      resetToNewPost();
+      if (appState.section === "editor") {
+        appState.dirty = false;
+        showSection("posts");
+      }
       if (listOk) toast("Post deleted.");
     } catch (err) {
       toast(describeError(err), true);
@@ -663,14 +915,20 @@
     }
   }
 
-  // ── Import of the site's hand-written articles (officers) ──────────────────
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // §6  IMPORT OF THE SITE'S HAND-WRITTEN ARTICLES (officers)
+  // ───────────────────────────────────────────────────────────────────────────
+
+  let siteArticles = null;
 
   /** Reads the articles in js/articles/*.js into the same shape as a post. */
   function readSiteArticles() {
+    if (siteArticles) return siteArticles;
     const holder = document.createElement("template"); // keeps the HTML inert while it is read
     holder.innerHTML = (window.BLOG_ARTICLES_PARTS || []).join("\n");
 
-    return Array.from(holder.content.querySelectorAll("article.blog-card")).map((card) => {
+    siteArticles = Array.from(holder.content.querySelectorAll("article.blog-card")).map((card) => {
       const text = (selector) => {
         const el = card.querySelector(selector);
         return el ? el.textContent.replace(/\s+/g, " ").trim() : "";
@@ -707,6 +965,15 @@
         date: String(card.dataset.date || ""),
       };
     });
+    return siteArticles;
+  }
+
+  /** The site articles that are not in the panel yet. */
+  function siteArticlesToImport() {
+    const taken = new Set(appState.posts.map((p) => p.slug));
+    return readSiteArticles().filter((a) =>
+      a.title && a.slug && !taken.has(a.slug) &&
+      CATEGORIES.includes(a.category) && /^\d{4}-\d{2}-\d{2}$/.test(a.date));
   }
 
   async function importSiteArticles() {
@@ -715,18 +982,18 @@
     setBusy(true);
     try {
       await refreshPosts();
-      const taken = new Set(appState.posts.map((p) => p.slug));
-      const articles = readSiteArticles().filter((a) =>
-        a.title && a.slug && !taken.has(a.slug) &&
-        CATEGORIES.includes(a.category) && /^\d{4}-\d{2}-\d{2}$/.test(a.date));
-
+      const articles = siteArticlesToImport();
       if (!articles.length) {
         toast("Nothing to import — every site article is already here.");
         return;
       }
-      const ok = window.confirm(
-        `Copy ${articles.length} article(s) from the site into the admin panel as published posts?\n\n` +
-        "They stay on the blog, shown newest first. From then on they are edited here.");
+      const ok = await askConfirm({
+        title: `Import ${plural(articles.length, "site article", "site articles")}?`,
+        text: "They are copied in as published posts and stay on the blog, shown newest first. From then on you edit them here.",
+        okLabel: "Import",
+        icon: "fa-file-import",
+        calm: true,
+      });
       if (!ok) return;
 
       const now = svc.nowIso();
@@ -743,7 +1010,7 @@
       })));
 
       await refreshPosts();
-      if (await publishList()) toast(`Imported ${articles.length} article(s).`);
+      if (await publishList()) toast(`Imported ${plural(articles.length, "article", "articles")}.`);
     } catch (err) {
       toast(describeError(err), true);
     } finally {
@@ -751,32 +1018,54 @@
     }
   }
 
-  // ── Editors list (officers) ────────────────────────────────────────────────
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // §7  EDITORS (officers)
   // Other active members the officers let in to write drafts. The officers
-  // themselves are not on it: their Mora Connect role is what lets them in.
+  // themselves are not on the list: their Mora Connect role is what lets them in.
+  // ───────────────────────────────────────────────────────────────────────────
 
   async function renderEditors() {
     const editors = await svc.listEditors(cfg);
     els.editorsList.innerHTML = editors.map((editor) => `
-      <div class="editor-row">
-        <span class="editor-who">
-          <strong>${esc(editor.name)}</strong>
-          <small>${esc(editor.email)}</small>
-        </span>
-        <button type="button" class="btn danger small" data-email="${esc(editor.email)}">Remove</button>
+      <div class="row no-thumb">
+        <div class="row-main">
+          <h3>${esc(editor.name)}</h3>
+          <p class="row-meta">${esc(editor.email)}</p>
+        </div>
+        <div class="row-actions">
+          <button type="button" class="btn btn-ghost btn-sm btn-delete" data-email="${esc(editor.email)}" data-name="${esc(editor.name)}">
+            <i class="fas fa-user-minus"></i><span>Remove</span>
+          </button>
+        </div>
       </div>
-    `).join("") || '<p class="muted">No editors added yet.</p>';
+    `).join("") || '<p class="empty"><i class="fas fa-users"></i><span>No editors added. Only the Secretary, President and Super Admin can sign in.</span></p>';
+  }
+
+  async function openEditors() {
+    showSection("editors");
+    try {
+      await renderEditors();
+    } catch (err) {
+      toast(describeError(err), true);
+    }
   }
 
   async function onEditorsListClick(event) {
     const btn = event.target.closest("button[data-email]");
     if (!btn) return;
     const email = btn.getAttribute("data-email");
-    if (!window.confirm(`Remove ${email} from the blog editors?`)) return;
+    const ok = await askConfirm({
+      title: `Remove ${btn.getAttribute("data-name") || email}?`,
+      text: "They will no longer be able to sign in to the blog admin. Their posts stay.",
+      okLabel: "Remove",
+      icon: "fa-user-minus",
+    });
+    if (!ok) return;
     try {
       await svc.removeEditor(cfg, email);
-      toast("Editor removed.");
       await renderEditors();
+      toast("Editor removed.");
     } catch (err) {
       toast(describeError(err), true);
     }
@@ -797,19 +1086,10 @@
     }
   }
 
-  async function toggleEditorsPanel() {
-    const open = els.editorsPanel.hidden;
-    els.editorsPanel.hidden = !open;
-    if (!open) return;
-    try {
-      await renderEditors();
-      els.editorsPanel.scrollIntoView({ behavior: "smooth", block: "start" });
-    } catch (err) {
-      toast(describeError(err), true);
-    }
-  }
 
-  // ── Start-up ───────────────────────────────────────────────────────────────
+  // ───────────────────────────────────────────────────────────────────────────
+  // §8  START-UP
+  // ───────────────────────────────────────────────────────────────────────────
 
   async function initEditor() {
     appState.editor = await ClassicEditor.create($("postContentEditor"), {
@@ -823,13 +1103,16 @@
           { model: "heading3", view: "h4", title: "Small heading", class: "ck-heading_heading3" },
         ],
       },
+      placeholder: "Write the story here…",
     });
     appState.editor.model.document.on("change:data", () => {
+      markDirty();
       renderPreview();
     });
   }
 
   function wireEvents() {
+    // ── Sign in / out ──
     els.loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const email = els.loginEmail.value.trim();
@@ -858,62 +1141,105 @@
       els.togglePassword.firstElementChild.className = `fas ${show ? "fa-eye-slash" : "fa-eye"}`;
     });
 
-    els.logoutBtn.addEventListener("click", () => svc.authSignOut());
-
-    els.newPostBtn.addEventListener("click", () => {
-      resetToNewPost();
-      els.postTitle.focus();
+    els.logoutBtn.addEventListener("click", async () => {
+      if (await okToLeaveForm()) svc.authSignOut();
     });
 
-    els.postSearch.addEventListener("input", renderPostList);
-    els.statusFilter.addEventListener("change", renderPostList);
+    // ── Side menu ──
+    navItems.forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!(await okToLeaveForm())) return;
+        appState.dirty = false;
+        if (btn.dataset.section === "editors") {
+          openEditors();
+        } else {
+          renderPosts();
+          showSection("posts");
+        }
+      });
+    });
+
+    // ── Posts list ──
+    els.newPostBtn.addEventListener("click", () => openEditor(null));
+    els.importBtn.addEventListener("click", importSiteArticles);
+    els.rebuildBtn.addEventListener("click", rebuildPublicList);
+    els.postSearch.addEventListener("input", renderPosts);
+    els.statusTabs.addEventListener("click", (event) => {
+      const tab = event.target.closest(".tab");
+      if (!tab) return;
+      appState.statusFilter = tab.getAttribute("data-status");
+      renderPosts();
+    });
+    els.postList.addEventListener("click", onPostListClick);
+    // A cover that fails to load gives way to the plain placeholder
+    els.postList.addEventListener("error", (event) => {
+      const img = event.target;
+      if (!(img instanceof HTMLImageElement) || !img.classList.contains("row-thumb")) return;
+      const placeholder = document.createElement("div");
+      placeholder.className = "row-thumb placeholder";
+      placeholder.innerHTML = '<i class="fas fa-image"></i>';
+      img.replaceWith(placeholder);
+    }, true);
+
+    // ── Form ──
+    els.backBtn.addEventListener("click", closeEditor);
+    els.cancelBtn.addEventListener("click", closeEditor);
 
     els.postTitle.addEventListener("input", () => {
-      if (!appState.loadedPost) {
-        els.postSlug.value = slugify(els.postTitle.value);
-      }
+      // The link name follows the title until the post has been saved once
+      if (!appState.loadedPost) els.postSlug.value = slugify(els.postTitle.value);
     });
 
-    [
-      els.postTitle,
-      els.postSlug,
-      els.postExcerpt,
-      els.postCategory,
-      els.postTags,
-      els.postAuthor,
-      els.postReadTime,
-      els.postDate,
-      els.postFeatured,
-      els.seoTitle,
-      els.seoDescription,
-      els.seoKeywords,
-    ].forEach((input) => {
-      input.addEventListener("input", renderPreview);
-      input.addEventListener("change", renderPreview);
-    });
-
-    els.coverUpload.addEventListener("change", () => {
-      renderCoverNote();
+    els.postForm.addEventListener("input", () => {
+      markDirty();
       renderPreview();
     });
+    els.postForm.addEventListener("change", () => {
+      markDirty();
+      renderPreview();
+    });
+    els.postForm.addEventListener("submit", (e) => e.preventDefault());
+
+    els.coverUpload.addEventListener("change", () => pickCover(els.coverUpload.files && els.coverUpload.files[0]));
+    ["dragenter", "dragover"].forEach((type) => els.dropzone.addEventListener(type, (e) => {
+      e.preventDefault();
+      els.dropzone.classList.add("dragging");
+    }));
+    ["dragleave", "drop"].forEach((type) => els.dropzone.addEventListener(type, (e) => {
+      e.preventDefault();
+      els.dropzone.classList.remove("dragging");
+    }));
+    els.dropzone.addEventListener("drop", (e) => pickCover(e.dataTransfer.files[0]));
     els.removeCoverBtn.addEventListener("click", () => {
       appState.coverPath = "";
-      renderCoverNote();
+      appState.pickedCover = null;
+      els.coverUpload.value = "";
+      markDirty();
+      renderCover();
       renderPreview();
-      toast("The cover picture is removed when you save.");
+    });
+    els.previewImage.addEventListener("error", () => {
+      els.previewImage.hidden = true;
+      els.previewIcon.hidden = false;
     });
 
     els.saveBtn.addEventListener("click", () => savePost(null));
     els.reviewBtn.addEventListener("click", () => savePost("review"));
     els.publishBtn.addEventListener("click", () => savePost("published"));
     els.unpublishBtn.addEventListener("click", () => savePost("draft"));
-    els.deleteBtn.addEventListener("click", deleteCurrentPost);
+    els.deleteBtn.addEventListener("click", () => deletePost(appState.loadedPost));
 
-    els.editorsBtn.addEventListener("click", toggleEditorsPanel);
-    els.importBtn.addEventListener("click", importSiteArticles);
-    els.rebuildBtn.addEventListener("click", rebuildPublicList);
+    // ── Editors ──
     els.editorsList.addEventListener("click", onEditorsListClick);
     els.editorForm.addEventListener("submit", addEditor);
+
+    // Closing the tab with unsaved writing: the browser asks first
+    window.addEventListener("beforeunload", (e) => {
+      if (appState.section === "editor" && appState.dirty) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    });
   }
 
   async function main() {
